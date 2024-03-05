@@ -14,7 +14,15 @@ lazy val settings = Seq(
   ThisBuild / scalafixDependencies += Dependency.organizeImports,
   ThisBuild / semanticdbEnabled := true,
   ThisBuild / semanticdbVersion := scalafixSemanticdb.revision,
-  ThisBuild / resolvers += Resolver.mavenLocal,
+  ThisBuild / credentials += Credentials(
+    "Repsy Managed Repository",
+    "repo.repsy.io", "ppotseluev",
+    sys.env.getOrElse("REPSY_PWD", "UNDEFINED")
+  ),
+  ThisBuild / resolvers ++= List(
+    Resolver.mavenLocal,
+    "Repsy Managed Repository" at "https://repo.repsy.io/mvn/ppotseluev/default"
+  ),
   useCoursier := false,
   scalacOptions := Seq(
     "-target:jvm-17",
@@ -61,5 +69,9 @@ lazy val `app` = project
   .settings(
     name := "app",
     settings,
-    assembly / mainClass := Some("com.github.ppotseluev.algorate.trader.app.AkkaTradingApp")
+    libraryDependencies ++= Seq(
+      Dependency.enumeratrum,
+      Dependency.botgen
+    ),
+//    assembly / mainClass := Some("com.github.ppotseluev.algorate.trader.app.AkkaTradingApp") TODO
   )

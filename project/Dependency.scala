@@ -39,4 +39,6 @@ object Dependency {
   val organizeImports = "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
   val pureconfig = "com.github.pureconfig" %% "pureconfig" % "0.17.2"
+
+  val botgen = "com.github.ppotseluev" %% "botgen-core" % "1.0-SNAPSHOT"
 }
