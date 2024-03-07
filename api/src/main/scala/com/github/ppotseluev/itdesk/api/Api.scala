@@ -31,6 +31,11 @@ class Api[F[_]: Async: Parallel](
     TelegramWebhook.webhookEndpoint(telegramHandler, telegramWebhookSecrets)
   )
 
+  private val operationalRoutes: HttpRoutes[F] = buildRoutes(
+    HealthCheck.healthCheckEndpoint,
+    prometheusMetrics.metricsEndpoint
+  )
+
   private def run(port: Int, routes: HttpRoutes[F]): F[ExitCode] =
     BlazeServerBuilder
       .apply[F]
@@ -41,7 +46,9 @@ class Api[F[_]: Async: Parallel](
       .drain
       .as(ExitCode.Error)
 
-  val runServer: F[ExitCode] = run(config.port, routes)
+  private val runOperationalServer: F[ExitCode] = run(config.operationalPort, operationalRoutes)
+  private val runServer: F[ExitCode] = run(config.port, routes)
+  val run: F[ExitCode] = runServer &> runOperationalServer
 }
 
 object Api {

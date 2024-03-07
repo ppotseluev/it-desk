@@ -11,7 +11,7 @@ object Main extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
     import factory._
     factory.telegramClient.use { implicit tg =>
-      factory.api.runServer
+      factory.api.run
     }
   }
 }
