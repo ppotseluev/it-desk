@@ -3,9 +3,6 @@ package com.github.ppotseluev.itdesk.api
 import com.github.ppotseluev.itdesk.api.telegram.WebhookSecret
 import com.github.ppotseluev.itdesk.bots.core.BotId
 import com.github.ppotseluev.itdesk.storage.MySqlConfig
-import pureconfig.ConfigReader
-import pureconfig.configurable.genericMapReader
-import pureconfig.error.{FailureReason, KeyNotFound}
 
 case class Config(
     telegramChatId: String,

@@ -1,6 +1,7 @@
 package com.github.ppotseluev.itdesk.api
 
-import com.github.ppotseluev.itdesk.bots.core.{BotId, ChatId}
+import com.github.ppotseluev.itdesk.bots.core.BotId
+import com.github.ppotseluev.itdesk.bots.core.ChatId
 import com.github.ppotseluev.itdesk.serialization.StringCodec
 
 object StringCodecInstances {

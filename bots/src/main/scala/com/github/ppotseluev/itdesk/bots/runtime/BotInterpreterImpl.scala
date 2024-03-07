@@ -1,8 +1,9 @@
 package com.github.ppotseluev.itdesk.bots.runtime
 
-import cats.implicits._
 import cats.ApplicativeError
-import com.github.ppotseluev.itdesk.bots.core.{BotDsl, BotId}
+import cats.implicits._
+import com.github.ppotseluev.itdesk.bots.core.BotDsl
+import com.github.ppotseluev.itdesk.bots.core.BotId
 
 class BotInterpreterImpl[F[_]](
     botStateDao: BotStateDao[F],

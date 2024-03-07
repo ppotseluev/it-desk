@@ -1,37 +1,34 @@
 package com.github.ppotseluev.itdesk.api
 
-import cats.{ApplicativeError, Parallel}
-import cats.effect.{Async, Concurrent, IO, Ref, Resource}
-import cats.effect.std.Console
-import cats.implicits._
-import StringCodecInstances._
-import com.github.ppotseluev.itdesk.api.telegram.{TelegramWebhook, WebhookSecret}
-import com.github.ppotseluev.itdesk.storage._
+import cats.Parallel
+import cats.effect.Async
+import cats.effect.IO
+import cats.effect.Resource
+import com.github.ppotseluev.itdesk.api.telegram.TelegramWebhook
+import com.github.ppotseluev.itdesk.api.telegram.WebhookSecret
 import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
-import com.github.ppotseluev.itdesk.bots.runtime._
 import com.github.ppotseluev.itdesk.bots.core._
-import com.github.ppotseluev.itdesk.bots.telegram.{
-  HttpTelegramClient,
-  TelegramChatService,
-  TelegramClient
-}
+import com.github.ppotseluev.itdesk.bots.runtime._
+import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramChatService
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient
 import com.github.ppotseluev.itdesk.storage.MySqlConfig
+import com.github.ppotseluev.itdesk.storage._
 import doobie.util.transactor.Transactor
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 import pureconfig.ConfigSource
-import pureconfig.generic.auto._
-import pureconfig.module.enumeratum._
-import pureconfig.syntax._
 import pureconfig._
 import pureconfig.configurable.genericMapReader
-import pureconfig.error.{FailureReason, KeyNotFound}
+import pureconfig.error.FailureReason
+import pureconfig.error.KeyNotFound
+import pureconfig.generic.auto._
+import pureconfig.module.enumeratum._
 import sttp.client3.SttpBackend
 import sttp.client3.httpclient.fs2.HttpClientFs2Backend
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
 
-import java.io.File
-import java.time.ZoneOffset
+import StringCodecInstances._
 
 class Factory[F[_]: Async: Parallel] {
 

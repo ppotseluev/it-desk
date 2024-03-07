@@ -6,6 +6,7 @@ import cats.free.Free.liftF
 sealed trait BotDsl[T]
 
 object BotDsl {
+
   /**
    * Free monad based bot's EDSL
    */
@@ -26,4 +27,3 @@ object BotDsl {
   def reply(botId: BotId, chatId: ChatId, message: Message.Payload): BotScript[Unit] =
     liftF(Reply(botId, chatId, message))
 }
-

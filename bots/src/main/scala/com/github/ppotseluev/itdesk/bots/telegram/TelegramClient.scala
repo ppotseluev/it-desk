@@ -2,7 +2,8 @@ package com.github.ppotseluev.itdesk.bots.telegram
 
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource
 import io.circe.Codec
-import io.circe.generic.extras.{Configuration, ConfiguredJsonCodec}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.ConfiguredJsonCodec
 import io.circe.generic.semiauto.deriveCodec
 
 trait TelegramClient[F[_]] {
@@ -20,17 +21,17 @@ object TelegramClient {
   }
 
   @ConfiguredJsonCodec
-  case class ReplyMarkup(keyboard: Option[Seq[Seq[KeyboardButton]]] = None,
-                         removeKeyboard: Option[Boolean] = None)
+  case class ReplyMarkup(
+      keyboard: Option[Seq[Seq[KeyboardButton]]] = None,
+      removeKeyboard: Option[Boolean] = None
+  )
 
   object ReplyMarkup {
     implicit val keyboardCodec: Codec[ReplyMarkup] = deriveCodec
   }
 
   @ConfiguredJsonCodec
-  case class MessageSource(chatId: String,
-                           text: String,
-                           replyMarkup: Option[ReplyMarkup])
+  case class MessageSource(chatId: String, text: String, replyMarkup: Option[ReplyMarkup])
 
   object MessageSource {
     implicit val messageSourceCodec: Codec[MessageSource] = deriveCodec

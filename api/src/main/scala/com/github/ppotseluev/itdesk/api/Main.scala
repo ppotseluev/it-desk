@@ -1,6 +1,8 @@
 package com.github.ppotseluev.itdesk.api
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.ExitCode
+import cats.effect.IO
+import cats.effect.IOApp
 
 object Main extends IOApp {
 

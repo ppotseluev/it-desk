@@ -1,18 +1,24 @@
 package com.github.ppotseluev.itdesk.api.telegram
 
 import cats.Monad
-import cats.implicits._
 import cats.effect.kernel.Async
+import cats.implicits._
 import com.github.ppotseluev.itdesk.api.BotBundle
-import com.github.ppotseluev.itdesk.bots.core.{BotId, BotInput, BotLogic, Message}
+import com.github.ppotseluev.itdesk.bots.core.BotInput
+import com.github.ppotseluev.itdesk.bots.core.Message
 import com.github.ppotseluev.itdesk.bots.runtime.BotInterpreter
 import io.circe.Codec
-import io.circe.generic.extras.{Configuration, ConfiguredJsonCodec}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.ConfiguredJsonCodec
 import io.circe.generic.semiauto.deriveCodec
-import sttp.tapir.json.circe.jsonBody
+import sttp.tapir.Endpoint
 import sttp.tapir._
+import sttp.tapir.auth
+import sttp.tapir.endpoint
 import sttp.tapir.generic.auto._
-import sttp.tapir.{Endpoint, auth, endpoint, header, stringBody}
+import sttp.tapir.header
+import sttp.tapir.json.circe.jsonBody
+import sttp.tapir.stringBody
 
 object TelegramWebhook {
   implicit private val circeConfig: Configuration = Configuration.default.withSnakeCaseMemberNames

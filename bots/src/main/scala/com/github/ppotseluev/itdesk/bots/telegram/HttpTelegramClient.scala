@@ -1,12 +1,17 @@
 package com.github.ppotseluev.itdesk.bots.telegram
 
 import cats.MonadError
-import io.circe.Printer
-import io.circe.syntax._
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
-import sttp.client3.{Response, SttpBackend, UriContext, basicRequest}
-import sttp.model.{Header, MediaType, StatusCode}
+import io.circe.Printer
+import io.circe.syntax._
+import sttp.client3.Response
+import sttp.client3.SttpBackend
+import sttp.client3.UriContext
+import sttp.client3.basicRequest
+import sttp.model.Header
+import sttp.model.MediaType
+import sttp.model.StatusCode
 
 class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
     sttpBackend: SttpBackend[F, Any],

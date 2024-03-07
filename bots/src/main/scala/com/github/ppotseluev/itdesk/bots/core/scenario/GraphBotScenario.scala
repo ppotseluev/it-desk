@@ -3,11 +3,11 @@ package com.github.ppotseluev.itdesk.bots.core.scenario
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.core.Action.GoTo
 import com.github.ppotseluev.itdesk.bots.core.Message.Payload
-import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.bots.core._
+import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import scalax.collection.GraphEdge.DiEdge
-import scalax.collection.edge.LBase.LEdgeImplicits
 import scalax.collection.edge.Implicits._
+import scalax.collection.edge.LBase.LEdgeImplicits
 import scalax.collection.edge._
 import scalax.collection.immutable.Graph
 

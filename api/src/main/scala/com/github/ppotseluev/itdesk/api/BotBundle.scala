@@ -1,7 +1,7 @@
 package com.github.ppotseluev.itdesk.api
 
 import com.github.ppotseluev.itdesk.api.telegram.WebhookSecret
-import com.github.ppotseluev.itdesk.bots.core.{BotId, BotLogic}
+import com.github.ppotseluev.itdesk.bots.core.BotLogic
 
 case class BotBundle(
     botType: BotType,

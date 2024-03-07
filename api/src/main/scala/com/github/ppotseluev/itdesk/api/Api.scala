@@ -1,13 +1,16 @@
 package com.github.ppotseluev.itdesk.api
 
 import cats.Parallel
-import cats.effect.{Async, ExitCode}
+import cats.effect.Async
+import cats.effect.ExitCode
 import cats.implicits._
-import com.github.ppotseluev.itdesk.api.telegram.{TelegramWebhook, WebhookSecret}
+import com.github.ppotseluev.itdesk.api.telegram.TelegramWebhook
+import com.github.ppotseluev.itdesk.api.telegram.WebhookSecret
 import org.http4s.HttpRoutes
 import org.http4s.blaze.server.BlazeServerBuilder
 import sttp.tapir.server.ServerEndpoint
-import sttp.tapir.server.http4s.{Http4sServerInterpreter, Http4sServerOptions}
+import sttp.tapir.server.http4s.Http4sServerInterpreter
+import sttp.tapir.server.http4s.Http4sServerOptions
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
 
 class Api[F[_]: Async: Parallel](

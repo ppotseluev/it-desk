@@ -1,8 +1,11 @@
 package com.github.ppotseluev.itdesk.bots.telegram
 
-import com.github.ppotseluev.itdesk.bots.core.{BotCommand, ChatId, Message}
+import com.github.ppotseluev.itdesk.bots.core.BotCommand
+import com.github.ppotseluev.itdesk.bots.core.ChatId
+import com.github.ppotseluev.itdesk.bots.core.Message
 import com.github.ppotseluev.itdesk.bots.runtime.ChatService
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.{KeyboardButton, ReplyMarkup}
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.KeyboardButton
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.ReplyMarkup
 
 class TelegramChatService[F[_]](telegramClient: TelegramClient[F]) extends ChatService[F] {
 

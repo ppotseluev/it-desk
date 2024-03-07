@@ -1,7 +1,6 @@
 package com.github.ppotseluev.itdesk.bots.core
 
-case class Message(chatId: ChatId,
-                   payload: Message.Payload)
+case class Message(chatId: ChatId, payload: Message.Payload)
 
 object Message {
 
