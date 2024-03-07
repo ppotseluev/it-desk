@@ -16,7 +16,8 @@ lazy val settings = Seq(
   ThisBuild / semanticdbVersion := scalafixSemanticdb.revision,
   ThisBuild / credentials += Credentials(
     "Repsy Managed Repository",
-    "repo.repsy.io", "ppotseluev",
+    "repo.repsy.io",
+    "ppotseluev",
     sys.env.getOrElse("REPSY_PWD", "UNDEFINED")
   ),
   ThisBuild / resolvers ++= List(
@@ -36,12 +37,19 @@ lazy val settings = Seq(
     Dependency.munit,
     Dependency.parCollections
   ),
+  dependencyOverrides ++= Seq(
+    "org.http4s" %% "http4s-core" % "0.23.25"
+  ),
   addCompilerPlugin(Dependency.kindProjector),
+  evictionWarningOptions in update := EvictionWarningOptions.default
+    .withWarnTransitiveEvictions(false)
+    .withWarnDirectEvictions(false)
+    .withWarnScalaVersionEviction(false),
   assembly / assemblyMergeStrategy := {
-    case x if x.contains("io.netty.versions.properties") => MergeStrategy.concat
-    case PathList(ps@_*) if ps.last endsWith "pom.properties" => MergeStrategy.first
-    case PathList("module-info.class") => MergeStrategy.discard
-    case PathList("META-INF", "versions", xs@_, "module-info.class") => MergeStrategy.discard
+    case x if x.contains("io.netty.versions.properties")               => MergeStrategy.concat
+    case PathList(ps @ _*) if ps.last endsWith "pom.properties"        => MergeStrategy.first
+    case PathList("module-info.class")                                 => MergeStrategy.discard
+    case PathList("META-INF", "versions", xs @ _, "module-info.class") => MergeStrategy.discard
     case x =>
       val oldStrategy = (assembly / assemblyMergeStrategy).value
       oldStrategy(x)
@@ -52,26 +60,56 @@ lazy val root = project
   .in(file("."))
   .settings(name := "it-desk")
   .aggregate(
-    `model`,
-    `app`
+    `bots`,
+    `api`
   )
 
-lazy val `model` = project
+lazy val `bots` = project
   .settings(
-    name := "model",
-    settings,
-    libraryDependencies ++= Seq(
-      Dependency.enumeratrum
-    )
-  )
-
-lazy val `app` = project
-  .settings(
-    name := "app",
+    name := "bots",
     settings,
     libraryDependencies ++= Seq(
       Dependency.enumeratrum,
-      Dependency.botgen
-    ),
-//    assembly / mainClass := Some("com.github.ppotseluev.algorate.trader.app.AkkaTradingApp") TODO
+      Dependency.kittens,
+      Dependency.catsFree,
+      Dependency.scalaGraph
+    ) ++ Dependency.sttp.all
+  )
+  .dependsOn(
+    `storage`
+  )
+
+lazy val `storage` = project
+  .settings(
+    name := "storage",
+    settings,
+    libraryDependencies ++= Seq(
+      Dependency.doobieCore,
+      Dependency.mysqlConnector
+    )
+  )
+  .dependsOn(
+    `serialization`
+  )
+
+lazy val `serialization` = project.settings(
+  name := "serialization",
+  settings,
+  libraryDependencies ++= Seq(
+  ) ++ Dependency.circe.all
+)
+
+lazy val `api` = project
+  .settings(
+    name := "api",
+    settings,
+    libraryDependencies ++= Seq(
+      Dependency.enumeratrum,
+      Dependency.scalaLogging,
+      Dependency.logback
+    ) ++ Dependency.httpServer.all ++ Dependency.pureconfig.all,
+    assembly / mainClass := Some("com.github.ppotseluev.itdesk.api.Main")
+  )
+  .dependsOn(
+    `bots`
   )
