@@ -4,9 +4,8 @@ import cats.Monad
 import cats.effect.kernel.Async
 import cats.implicits._
 import com.github.ppotseluev.itdesk.api.BotBundle
-import com.github.ppotseluev.itdesk.bots.core.BotInput
 import com.github.ppotseluev.itdesk.bots.core.Message
-import com.github.ppotseluev.itdesk.bots.runtime.BotInterpreter
+import com.github.ppotseluev.itdesk.bots.runtime.{BotInterpreter, InterpreterContext}
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.ConfiguredJsonCodec
@@ -24,7 +23,7 @@ object TelegramWebhook {
   implicit private val circeConfig: Configuration = Configuration.default.withSnakeCaseMemberNames
 
   @ConfiguredJsonCodec
-  case class Chat(id: Int)
+  case class Chat(id: Long)
 
   object Chat {
     implicit val codec: Codec[Chat] = deriveCodec
@@ -66,8 +65,8 @@ object TelegramWebhook {
   class Handler[F[_]: Monad](
       allowedUsers: Set[UserId],
       trackedChats: Option[Set[String]],
-      botInterpreter: BotInterpreter[F],
-      bots: Map[WebhookSecret, BotBundle]
+      botInterpreter: InterpreterContext => BotInterpreter[F],
+      bots: Map[WebhookSecret, BotBundle[F]]
   ) {
     private val success = ().asRight[Error].pure[F]
 
@@ -86,8 +85,8 @@ object TelegramWebhook {
               chatId = chat.id.toString
             )
             val bot = bots(webhookSecret)
-            val botInput = BotInput(bot.botType.id, message) //todo bot get is unsafe
-            bot.logic(botInput).foldMap(botInterpreter).map(_.asRight)
+            val ctx = InterpreterContext(bot.botType.id, message.chatId)
+            bot.logic(message.payload).foldMap(botInterpreter(ctx)).map(_.asRight)
           } else {
             skip
           }

@@ -3,27 +3,45 @@ package com.github.ppotseluev.itdesk.bots.core
 import cats.free.Free
 import cats.free.Free.liftF
 
-sealed trait BotDsl[T]
+//private[core] sealed trait InternalBotDsl[+F[_], T]
+//sealed trait BotDsl[+F[_], T] extends InternalBotDsl[F, T]
+sealed trait BotDsl[+F[_], T]
 
 object BotDsl {
 
   /**
    * Free monad based bot's EDSL
    */
-  type BotScript[T] = Free[BotDsl, T]
+  type BotScript[F[_], T] = Free[BotDsl[F, *], T]
+//  type BotScript[F[_], T] = Free[InternalBotDsl[F, *], T]
+//  type ExecutableBotScript[F[_], T] = Free[BotDsl]
 
-  case class GetCurrentState(chatId: ChatId, botId: BotId) extends BotDsl[Option[BotStateId]]
+  case object GetCurrentState extends BotDsl[Nothing, Option[BotStateId]]
 
-  case class SaveState(chatId: ChatId, botId: BotId, botStateId: BotStateId) extends BotDsl[Unit]
+  case class SaveState(botStateId: BotStateId) extends BotDsl[Nothing, Unit]
 
-  case class Reply(botId: BotId, chatId: ChatId, message: Message.Payload) extends BotDsl[Unit]
+  case class Reply(message: Message.Payload) extends BotDsl[Nothing, Unit]
 
-  def getCurrentState(chatId: ChatId, botId: BotId): BotScript[Option[BotStateId]] =
-    liftF(GetCurrentState(chatId, botId))
+  case class Execute[F[_], T](f: F[T]) extends BotDsl[F, T]
 
-  def saveState(chatId: ChatId, botId: BotId, botStateId: BotStateId): BotScript[Unit] =
-    liftF(SaveState(chatId, botId, botStateId))
+//  case class GoTo(state: BotStateId) extends InternalBotDsl[Nothing, BotStateId]
 
-  def reply(botId: BotId, chatId: ChatId, message: Message.Payload): BotScript[Unit] =
-    liftF(Reply(botId, chatId, message))
+//  def goTo[F[_]](state: BotStateId): BotScript[F, BotStateId] =
+//    liftF(GoTo(state))
+
+  def getCurrentState[F[_]]: BotScript[F, Option[BotStateId]] =
+    liftF(GetCurrentState)
+
+  def saveState[F[_]](botStateId: BotStateId): BotScript[F, Unit] =
+    liftF(SaveState(botStateId))
+
+  def reply[F[_]](message: Message.Payload): BotScript[F, Unit] =
+    liftF(Reply(message))
+
+  def reply[F[_]](text: String): BotScript[F, Unit] =
+    reply(Message.Payload(text, Seq.empty))
+
+  def execute[F[_], T](f: F[T]): BotScript[F, T] =
+    liftF(Execute(f))
+
 }

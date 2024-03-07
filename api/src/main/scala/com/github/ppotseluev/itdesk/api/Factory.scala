@@ -61,12 +61,12 @@ class Factory[F[_]: Async: Parallel] {
       tgClient
     )
 
-  implicit def botInterpreter(implicit chatService: ChatService[F]): BotInterpreter[F] =
+  implicit def botInterpreter(implicit chatService: ChatService[F]) =
     new BotInterpreterImpl(
       botStateDao,
       chatService,
       id => config.botWithId(id).token
-    )
+    )(_)
 
   lazy val botStateDao: BotStateDao[F] = {
     implicit val botInfoCodec: Codec[BotInfo] = deriveCodec
@@ -93,15 +93,15 @@ class Factory[F[_]: Async: Parallel] {
       .resource[F]()
       .map(create)
 
-  private def botLogic(botType: BotType): BotLogic = botType match {
+  private def botLogic(botType: BotType): BotLogic[F] = botType match {
     case BotType.GreetingBot =>
       new Bot(
-        scenario = GreetingBot.scenario,
+        scenario = GreetingBot[F].scenario,
         fallbackPolicy = FallbackPolicy.Ignore
       )
   }
 
-  private val bots: Map[WebhookSecret, BotBundle] = config.bots.map { case (botType, cfg) =>
+  private val bots: Map[WebhookSecret, BotBundle[F]] = config.bots.map { case (botType, cfg) =>
     cfg.webhookSecret -> BotBundle(
       botType = botType,
       token = cfg.token,
@@ -111,7 +111,7 @@ class Factory[F[_]: Async: Parallel] {
   }
 
   def telegramWebhookHandler(implicit
-      botInterpreter: BotInterpreter[F]
+      botInterpreter: InterpreterContext => BotInterpreter[F]
   ): TelegramWebhook.Handler[F] =
     new TelegramWebhook.Handler[F](
       allowedUsers = config.telegramUsersWhitelist,
@@ -121,7 +121,7 @@ class Factory[F[_]: Async: Parallel] {
     )
 
   def api(implicit
-      botInterpreter: BotInterpreter[F]
+      botInterpreter: InterpreterContext => BotInterpreter[F]
   ): Api[F] = new Api(
     telegramHandler = telegramWebhookHandler,
     telegramWebhookSecrets = config.bots.values.map(_.webhookSecret).toSet,
