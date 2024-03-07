@@ -12,6 +12,7 @@ case class Config(
     dbConfig: MySqlConfig,
     botStatesTable: String,
     bots: Map[BotType, BotConfig],
+    restrictChat: Boolean,
     localEnv: Boolean = false
 ) {
   def botWithId(id: BotId): BotConfig = {

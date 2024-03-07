@@ -65,7 +65,7 @@ object TelegramWebhook {
 
   class Handler[F[_]: Monad](
       allowedUsers: Set[UserId],
-      trackedChats: Set[String],
+      trackedChats: Option[Set[String]],
       botInterpreter: BotInterpreter[F],
       bots: Map[WebhookSecret, BotBundle]
   ) {
@@ -79,7 +79,7 @@ object TelegramWebhook {
           val chatId = chat.id.toString
           val shouldReact =
             allowedUsers.contains(user.id) &&
-              trackedChats.contains(chatId)
+              trackedChats.forall(_.contains(chatId))
           if (shouldReact) {
             val message = Message(
               payload = Message.Payload(text, Seq.empty),

@@ -115,7 +115,7 @@ class Factory[F[_]: Async: Parallel] {
   ): TelegramWebhook.Handler[F] =
     new TelegramWebhook.Handler[F](
       allowedUsers = config.telegramUsersWhitelist,
-      trackedChats = config.telegramTrackedChats,
+      trackedChats = Option.when(config.restrictChat)(config.telegramTrackedChats),
       botInterpreter = botInterpreter,
       bots = bots
     )
