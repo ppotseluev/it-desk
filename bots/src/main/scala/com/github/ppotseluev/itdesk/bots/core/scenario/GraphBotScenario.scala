@@ -26,13 +26,12 @@ class GraphBotScenario[F[_]](
   private def extractAvailableCommands(node: graph.NodeT): List[BotCommand] =
     node.outgoing.toList.sortBy(_.order).flatMap(asCommand)
 
-  private def toBotState(node: graph.NodeT): Option[BotState[F]] =
-    //TODO support GoTo
+  private def toBotState(node: graph.NodeT): BotState[F] =
     BotState(
       id = node.id,
       action = node.action,
       availableCommands = extractAvailableCommands(node)
-    ).some
+    )
 
   private def asCommand(edge: graph.EdgeT): Option[BotCommand] =
     edge.expectedInputPredicate match {
@@ -48,11 +47,11 @@ class GraphBotScenario[F[_]](
       .get(stateId)
       .flatMap(_.outgoing.find(isMatched(command)))
       .map(_.to)
-      .flatMap(toBotState)
+      .map(toBotState)
       .orElse(globalState(stateId, command))
 
   private def get(stateId: BotStateId): Option[BotState[F]] =
-    states.get(stateId).flatMap(toBotState)
+    states.get(stateId).map(toBotState)
 
   private def globalState(
       currentStateId: BotStateId,
@@ -60,8 +59,7 @@ class GraphBotScenario[F[_]](
   ): Option[BotState[F]] =
     globalCommands.get(command.text) match {
       case Some(action) => get(currentStateId).map(_.copy(action = action))
-//      case Some(GoTo(anotherState))        => get(anotherState) TODO
-      case None => None
+      case None         => None
     }
 }
 
