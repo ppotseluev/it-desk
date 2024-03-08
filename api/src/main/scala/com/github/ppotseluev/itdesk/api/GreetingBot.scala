@@ -6,17 +6,12 @@ import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
-import io.circe.syntax._
-import sttp.client3.Response
-import sttp.client3.SttpBackend
-import sttp.client3.UriContext
-import sttp.client3.basicRequest
-
 import java.time.LocalDateTime
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
+import sttp.client3.SttpBackend
+import sttp.client3.UriContext
 import sttp.client3.basicRequest
-import sttp.model.{Header, MediaType}
 
 class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
 

@@ -27,6 +27,7 @@ import pureconfig.module.enumeratum._
 import sttp.client3.SttpBackend
 import sttp.client3.httpclient.fs2.HttpClientFs2Backend
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
+
 import StringCodecInstances._
 
 class Factory[F[_]: Async: Parallel] {
