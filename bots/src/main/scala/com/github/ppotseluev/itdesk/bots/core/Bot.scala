@@ -12,11 +12,11 @@ class Bot[F[_]](
     scenario: GraphBotScenario[F],
     fallbackPolicy: FallbackPolicy
 ) extends BotLogic[F] {
-//todo remove botId chatid from Input. Do we need payload here?
-  override def apply(payload: Message.Payload): BotScript[F, Unit] = {
+
+  override def apply(input: String): BotScript[F, Unit] = {
     for {
       currentStateId <- getCurrentState.map(_.getOrElse(scenario.startFrom))
-      _ <- scenario.transit(currentStateId, payload) match {
+      _ <- scenario.transit(currentStateId, input) match {
         case Some(newState) => process(newState)
         case None =>
           fallbackPolicy match {

@@ -4,7 +4,6 @@ import cats.Monad
 import cats.effect.kernel.Async
 import cats.implicits._
 import com.github.ppotseluev.itdesk.api.BotBundle
-import com.github.ppotseluev.itdesk.bots.core.Message
 import com.github.ppotseluev.itdesk.bots.runtime.BotInterpreter
 import com.github.ppotseluev.itdesk.bots.runtime.InterpreterContext
 import io.circe.Codec
@@ -75,19 +74,15 @@ object TelegramWebhook {
 
     def handleTelegramEvent(webhookSecret: WebhookSecret)(update: Update): F[Either[Error, Unit]] =
       update.message match {
-        case Some(TgMessage(_, Some(user), chat, Some(text))) =>
+        case Some(TgMessage(_, Some(user), chat, Some(input))) =>
           val chatId = chat.id.toString
           val shouldReact =
             allowedUsers.contains(user.id) &&
               trackedChats.forall(_.contains(chatId))
           if (shouldReact) {
-            val message = Message(
-              payload = Message.Payload(text, Seq.empty),
-              chatId = chat.id.toString
-            )
             val bot = bots(webhookSecret)
-            val ctx = InterpreterContext(bot.botType.id, message.chatId)
-            bot.logic(message.payload).foldMap(botInterpreter(ctx)).map(_.asRight)
+            val ctx = InterpreterContext(bot.botType.id, chatId)
+            bot.logic(input).foldMap(botInterpreter(ctx)).map(_.asRight)
           } else {
             skip
           }

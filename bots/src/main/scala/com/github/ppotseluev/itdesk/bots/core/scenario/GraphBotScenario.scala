@@ -2,7 +2,6 @@ package com.github.ppotseluev.itdesk.bots.core.scenario
 
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.core.BotDsl.BotScript
-import com.github.ppotseluev.itdesk.bots.core.Message.Payload
 import com.github.ppotseluev.itdesk.bots.core._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import scalax.collection.GraphEdge.DiEdge
@@ -39,10 +38,10 @@ class GraphBotScenario[F[_]](
         Some(expectedText)
     }
 
-  private def isMatched(command: Payload)(edge: graph.EdgeT): Boolean =
+  private def isMatched(command: String)(edge: graph.EdgeT): Boolean =
     Matcher.isMatched(command)(edge.expectedInputPredicate)
 
-  def transit(stateId: BotStateId, command: Message.Payload): Option[BotState[F]] =
+  def transit(stateId: BotStateId, command: String): Option[BotState[F]] =
     states
       .get(stateId)
       .flatMap(_.outgoing.find(isMatched(command)))
@@ -55,9 +54,9 @@ class GraphBotScenario[F[_]](
 
   private def globalState(
       currentStateId: BotStateId,
-      command: Message.Payload
+      command: String
   ): Option[BotState[F]] =
-    globalCommands.get(command.text) match {
+    globalCommands.get(command) match {
       case Some(action) => get(currentStateId).map(_.copy(action = action))
       case None         => None
     }
