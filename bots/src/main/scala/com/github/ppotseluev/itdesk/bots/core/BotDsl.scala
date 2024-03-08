@@ -2,6 +2,7 @@ package com.github.ppotseluev.itdesk.bots.core
 
 import cats.free.Free
 import cats.free.Free.liftF
+import cats.~>
 
 //private[core] sealed trait InternalBotDsl[+F[_], T]
 //sealed trait BotDsl[+F[_], T] extends InternalBotDsl[F, T]
@@ -28,6 +29,19 @@ object BotDsl {
 
 //  def goTo[F[_]](state: BotStateId): BotScript[F, BotStateId] =
 //    liftF(GoTo(state))
+
+  class Enricher[F[_]](commands: List[BotCommand]) extends (BotDsl[F, *] ~> BotDsl[F, *]) {
+    override def apply[A](fa: BotDsl[F, A]): BotDsl[F, A] = fa match {
+      case Reply(message) =>
+        Reply(message.copy(availableCommands = commands))
+      case x => x
+    }
+  }
+
+  implicit class BotScriptSyntax[F[_], T](val script: BotScript[F, T]) extends AnyVal {
+    def withAvailableCommands(commands: List[BotCommand]): Free[BotDsl[F, *], T] =
+      script.mapK(new Enricher[F](commands))
+  }
 
   def getCurrentState[F[_]]: BotScript[F, Option[BotStateId]] =
     liftF(GetCurrentState)

@@ -28,7 +28,7 @@ class Bot[F[_]](
 
   private def process(newState: BotState[F]): BotScript[F, Unit] = for {
     _ <- saveState(newState.id)
-    _ <- newState.action
+    _ <- newState.action.withAvailableCommands(newState.availableCommands) //TODO is it a right place to do it?
   } yield ()
 }
 

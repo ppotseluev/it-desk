@@ -23,8 +23,8 @@ class GraphBotScenario[F[_]](
       .map(node => node.id -> node)
       .toMap
 
-  private def extractAvailableCommands(node: graph.NodeT): Seq[BotCommand] =
-    node.outgoing.toSeq.sortBy(_.order).flatMap(asCommand)
+  private def extractAvailableCommands(node: graph.NodeT): List[BotCommand] =
+    node.outgoing.toList.sortBy(_.order).flatMap(asCommand)
 
   private def toBotState(node: graph.NodeT): Option[BotState[F]] =
     //TODO support GoTo
