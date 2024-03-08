@@ -4,8 +4,6 @@ import cats.free.Free
 import cats.free.Free.liftF
 import cats.~>
 
-//private[core] sealed trait InternalBotDsl[+F[_], T]
-//sealed trait BotDsl[+F[_], T] extends InternalBotDsl[F, T]
 sealed trait BotDsl[+F[_], T]
 
 object BotDsl {
@@ -14,8 +12,6 @@ object BotDsl {
    * Free monad based bot's EDSL
    */
   type BotScript[F[_], T] = Free[BotDsl[F, *], T]
-//  type BotScript[F[_], T] = Free[InternalBotDsl[F, *], T]
-//  type ExecutableBotScript[F[_], T] = Free[BotDsl]
 
   private[bots] case object GetCurrentState extends BotDsl[Nothing, Option[BotStateId]]
 
