@@ -45,6 +45,7 @@ class GreetingBot[F[_]: Sync] {
     startFrom = start.id,
     globalCommands = Map(
 //      "/start" -> goTo(about2.id),
+      "/time" -> getTime.map(_.toString).flatMap(reply),
       "/help" -> reply("Here should be some help message")
     )
   )
