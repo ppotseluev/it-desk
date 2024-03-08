@@ -1,3 +1,9 @@
 package com.github.ppotseluev.itdesk.bots.core
 
-case class BotState(id: BotStateId, action: BasicAction, availableCommands: Seq[BotCommand])
+import com.github.ppotseluev.itdesk.bots.core.BotDsl.BotScript
+
+case class BotState[F[_]](
+    id: BotStateId,
+    action: BotScript[F, Unit],
+    availableCommands: List[BotCommand]
+)

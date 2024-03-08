@@ -8,32 +8,27 @@ import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 /**
  * Describes bot logic using [[BotDsl]]
  */
-class Bot(
-    scenario: GraphBotScenario,
+class Bot[F[_]](
+    scenario: GraphBotScenario[F],
     fallbackPolicy: FallbackPolicy
-) extends BotLogic {
+) extends BotLogic[F] {
 
-  override def apply(botInput: BotInput): BotScript[Unit] = {
-    val BotInput(botId, Message(chatId, payload)) = botInput
+  override def apply(input: String): BotScript[F, Unit] = {
     for {
-      currentStateId <- getCurrentState(chatId, botId).map(_.getOrElse(scenario.startFrom))
-      _ <- scenario.transit(currentStateId, payload) match {
-        case Some(newState) => process(botInput, newState)
+      currentStateId <- getCurrentState.map(_.getOrElse(scenario.startFrom))
+      _ <- scenario.transit(currentStateId, input) match {
+        case Some(newState) => process(newState)
         case None =>
           fallbackPolicy match {
-            case FallbackPolicy.Ignore => ().pure[BotScript]
+            case FallbackPolicy.Ignore => ().pure[BotScript[F, *]]
           }
       }
     } yield ()
   }
 
-  private def process(botInput: BotInput, newState: BotState): BotScript[Unit] = for {
-    _ <- saveState(botInput.message.chatId, botInput.botId, newState.id)
-    _ <- newState.action match {
-      case Action.Reply(text) =>
-        val payload = Message.Payload(text, newState.availableCommands)
-        reply(botInput.botId, botInput.message.chatId, payload)
-    }
+  private def process(newState: BotState[F]): BotScript[F, Unit] = for {
+    _ <- saveState(newState.id)
+    _ <- newState.action.withAvailableCommands(newState.availableCommands)
   } yield ()
 }
 

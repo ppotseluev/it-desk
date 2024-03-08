@@ -1,8 +1,7 @@
 package com.github.ppotseluev.itdesk.bots.core.scenario
 
 import cats.implicits._
-import com.github.ppotseluev.itdesk.bots.core.Action.GoTo
-import com.github.ppotseluev.itdesk.bots.core.Message.Payload
+import com.github.ppotseluev.itdesk.bots.core.BotDsl.BotScript
 import com.github.ppotseluev.itdesk.bots.core._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import scalax.collection.GraphEdge.DiEdge
@@ -11,10 +10,10 @@ import scalax.collection.edge.LBase.LEdgeImplicits
 import scalax.collection.edge._
 import scalax.collection.immutable.Graph
 
-class GraphBotScenario(
-    val graph: BotGraph,
+class GraphBotScenario[F[_]](
+    val graph: BotGraph[F],
     val startFrom: BotStateId,
-    val globalCommands: Map[BotCommand, Action]
+    val globalCommands: Map[BotCommand, BotScript[F, Unit]]
 ) {
   import GraphBotScenario.EdgeImplicits._
 
@@ -23,20 +22,15 @@ class GraphBotScenario(
       .map(node => node.id -> node)
       .toMap
 
-  private def extractAvailableCommands(node: graph.NodeT): Seq[BotCommand] =
-    node.outgoing.toSeq.sortBy(_.order).flatMap(asCommand)
+  private def extractAvailableCommands(node: graph.NodeT): List[BotCommand] =
+    node.outgoing.toList.sortBy(_.order).flatMap(asCommand)
 
-  private def toBotState(node: graph.NodeT): Option[BotState] =
-    node.action match {
-      case action: BasicAction =>
-        BotState(
-          id = node.id,
-          action = action,
-          availableCommands = extractAvailableCommands(node)
-        ).some
-      case Action.GoTo(state) =>
-        get(state)
-    }
+  private def toBotState(node: graph.NodeT): BotState[F] =
+    BotState(
+      id = node.id,
+      action = node.action,
+      availableCommands = extractAvailableCommands(node)
+    )
 
   private def asCommand(edge: graph.EdgeT): Option[BotCommand] =
     edge.expectedInputPredicate match {
@@ -44,25 +38,27 @@ class GraphBotScenario(
         Some(expectedText)
     }
 
-  private def isMatched(command: Payload)(edge: graph.EdgeT): Boolean =
+  private def isMatched(command: String)(edge: graph.EdgeT): Boolean =
     Matcher.isMatched(command)(edge.expectedInputPredicate)
 
-  def transit(stateId: BotStateId, command: Message.Payload): Option[BotState] =
+  def transit(stateId: BotStateId, command: String): Option[BotState[F]] =
     states
       .get(stateId)
       .flatMap(_.outgoing.find(isMatched(command)))
       .map(_.to)
-      .flatMap(toBotState)
+      .map(toBotState)
       .orElse(globalState(stateId, command))
 
-  private def get(stateId: BotStateId): Option[BotState] =
-    states.get(stateId).flatMap(toBotState)
+  private def get(stateId: BotStateId): Option[BotState[F]] =
+    states.get(stateId).map(toBotState)
 
-  private def globalState(currentStateId: BotStateId, command: Message.Payload): Option[BotState] =
-    globalCommands.get(command.text) match {
-      case Some(action: BasicAction) => get(currentStateId).map(_.copy(action = action))
-      case Some(GoTo(anotherState))  => get(anotherState)
-      case None                      => None
+  private def globalState(
+      currentStateId: BotStateId,
+      command: String
+  ): Option[BotState[F]] =
+    globalCommands.get(command) match {
+      case Some(action) => get(currentStateId).map(_.copy(action = action))
+      case None         => None
     }
 }
 
@@ -77,9 +73,9 @@ object GraphBotScenario {
     def by(command: String) = e + EdgeLabel(command)
   }
 
-  case class Node(id: BotStateId, action: Action)
+  case class Node[F[_]](id: BotStateId, action: BotScript[F, Unit])
 
-  type BotGraph = Graph[Node, LDiEdge]
+  type BotGraph[F[_]] = Graph[Node[F], LDiEdge]
 
   object EdgeImplicits extends LEdgeImplicits[EdgeLabel]
 

@@ -8,5 +8,5 @@ import com.github.ppotseluev.itdesk.storage.KeyValueDao
 
 package object runtime {
   type BotStateDao[F[_]] = KeyValueDao[F, (ChatId, BotId), BotInfo]
-  type BotInterpreter[F[_]] = BotDsl ~> F
+  type BotInterpreter[F[_]] = BotDsl[F, *] ~> F
 }

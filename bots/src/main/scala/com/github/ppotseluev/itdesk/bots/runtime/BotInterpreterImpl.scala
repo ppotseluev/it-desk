@@ -1,24 +1,31 @@
 package com.github.ppotseluev.itdesk.bots.runtime
 
-import cats.ApplicativeError
+import cats.ApplicativeThrow
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.core.BotDsl
 import com.github.ppotseluev.itdesk.bots.core.BotId
+import com.github.ppotseluev.itdesk.bots.core.ChatId
 
-class BotInterpreterImpl[F[_]](
+class BotInterpreterImpl[F[_]: ApplicativeThrow](
     botStateDao: BotStateDao[F],
     chatService: ChatService[F],
-    botToken: BotId => String
-)(implicit
-    F: ApplicativeError[F, Throwable]
-) extends BotInterpreter[F] {
+    botToken: BotId => String //todo take from ctx?
+)(context: InterpreterContext)
+    extends BotInterpreter[F] {
 
-  override def apply[A](botDsl: BotDsl[A]): F[A] = botDsl match {
-    case BotDsl.GetCurrentState(chatId, botId) =>
-      botStateDao.get(chatId -> botId).map(_.map(_.botStateId))
-    case BotDsl.SaveState(chatId, botId, botStateId) =>
-      botStateDao.put(chatId -> botId, BotInfo(botStateId))
-    case BotDsl.Reply(botId, chatId, message) =>
-      chatService.send(botToken(botId))(chatId)(message)
+  def apply[A](botDsl: BotDsl[F, A]): F[A] = {
+    import context._
+    botDsl match {
+      case BotDsl.GetCurrentState =>
+        botStateDao.get(chatId -> botId).map(_.map(_.botStateId))
+      case BotDsl.SaveState(botStateId) =>
+        botStateDao.put(chatId -> botId, BotInfo(botStateId))
+      case BotDsl.Reply(message) =>
+        chatService.send(botToken(botId))(chatId)(message)
+      case BotDsl.Execute(f) =>
+        f
+    }
   }
 }
+
+case class InterpreterContext(botId: BotId, chatId: ChatId)
