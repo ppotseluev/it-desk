@@ -27,7 +27,6 @@ import pureconfig.module.enumeratum._
 import sttp.client3.SttpBackend
 import sttp.client3.httpclient.fs2.HttpClientFs2Backend
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
-
 import StringCodecInstances._
 
 class Factory[F[_]: Async: Parallel] {
@@ -51,10 +50,8 @@ class Factory[F[_]: Async: Parallel] {
 
   lazy val prometheusMetrics: PrometheusMetrics[F] = PrometheusMetrics.default[F]()
 
-  lazy val telegramClient: Resource[F, TelegramClient[F]] =
-    createHttpClient[TelegramClient[F]] { implicit sttp =>
-      new HttpTelegramClient(config.telegramUrl)
-    }
+  implicit def telegramClient(implicit sttpBackend: SttpBackend[F, Any]): TelegramClient[F] =
+    new HttpTelegramClient(config.telegramUrl)
 
   implicit def chatService(implicit tgClient: TelegramClient[F]): ChatService[F] =
     new TelegramChatService(
@@ -86,32 +83,35 @@ class Factory[F[_]: Async: Parallel] {
         None
       )
 
-  private def createHttpClient[C](
+  def withSttp[C](
       create: SttpBackend[F, Any] => C
   ): Resource[F, C] =
     HttpClientFs2Backend
       .resource[F]()
       .map(create)
 
-  private def botLogic(botType: BotType): BotLogic[F] = botType match {
-    case BotType.GreetingBot =>
-      new Bot(
-        scenario = GreetingBot[F].scenario,
-        fallbackPolicy = FallbackPolicy.Ignore
-      )
-  }
+  private def botLogic(botType: BotType)(implicit sttp: SttpBackend[F, Any]): BotLogic[F] =
+    botType match {
+      case BotType.GreetingBot =>
+        new Bot(
+          scenario = GreetingBot[F].scenario,
+          fallbackPolicy = FallbackPolicy.Ignore
+        )
+    }
 
-  private val bots: Map[WebhookSecret, BotBundle[F]] = config.bots.map { case (botType, cfg) =>
-    cfg.webhookSecret -> BotBundle(
-      botType = botType,
-      token = cfg.token,
-      webhookSecret = cfg.webhookSecret,
-      logic = botLogic(botType)
-    )
-  }
+  private def bots(implicit sttp: SttpBackend[F, Any]): Map[WebhookSecret, BotBundle[F]] =
+    config.bots.map { case (botType, cfg) =>
+      cfg.webhookSecret -> BotBundle(
+        botType = botType,
+        token = cfg.token,
+        webhookSecret = cfg.webhookSecret,
+        logic = botLogic(botType)
+      )
+    }
 
   def telegramWebhookHandler(implicit
-      botInterpreter: InterpreterContext => BotInterpreter[F]
+      botInterpreter: InterpreterContext => BotInterpreter[F],
+      sttp: SttpBackend[F, Any]
   ): TelegramWebhook.Handler[F] =
     new TelegramWebhook.Handler[F](
       allowedUsers = config.telegramUsersWhitelist,
@@ -121,7 +121,8 @@ class Factory[F[_]: Async: Parallel] {
     )
 
   def api(implicit
-      botInterpreter: InterpreterContext => BotInterpreter[F]
+      botInterpreter: InterpreterContext => BotInterpreter[F],
+      sttp: SttpBackend[F, Any]
   ): Api[F] = new Api(
     telegramHandler = telegramWebhookHandler,
     telegramWebhookSecrets = config.bots.values.map(_.webhookSecret).toSet,
