@@ -1,8 +1,10 @@
 package com.github.ppotseluev.itdesk.bots.runtime
 
-import cats.{ApplicativeError, ApplicativeThrow}
+import cats.ApplicativeThrow
 import cats.implicits._
-import com.github.ppotseluev.itdesk.bots.core.{BotDsl, BotId, ChatId}
+import com.github.ppotseluev.itdesk.bots.core.BotDsl
+import com.github.ppotseluev.itdesk.bots.core.BotId
+import com.github.ppotseluev.itdesk.bots.core.ChatId
 
 class BotInterpreterImpl[F[_]: ApplicativeThrow](
     botStateDao: BotStateDao[F],

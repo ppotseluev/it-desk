@@ -1,15 +1,12 @@
 package com.github.ppotseluev.itdesk.api
 
-import cats.Monad
 import cats.effect.Sync
-import cats.implicits._
+import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
+import java.time.LocalDateTime
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
-import com.github.ppotseluev.itdesk.bots.core.BotDsl._
-
-import java.time.LocalDateTime
 
 class GreetingBot[F[_]: Sync] {
 
@@ -45,7 +42,7 @@ class GreetingBot[F[_]: Sync] {
     startFrom = start.id,
     globalCommands = Map(
 //      "/start" -> goTo(about2.id),
-      "/time" -> getTime.map(_.toString).flatMap(reply),
+      "/time" -> getTime.map(_.toString).flatMap(reply[F]),
       "/help" -> reply("Here should be some help message")
     )
   )

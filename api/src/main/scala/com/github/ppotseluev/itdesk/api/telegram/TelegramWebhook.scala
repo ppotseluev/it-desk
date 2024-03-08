@@ -5,7 +5,8 @@ import cats.effect.kernel.Async
 import cats.implicits._
 import com.github.ppotseluev.itdesk.api.BotBundle
 import com.github.ppotseluev.itdesk.bots.core.Message
-import com.github.ppotseluev.itdesk.bots.runtime.{BotInterpreter, InterpreterContext}
+import com.github.ppotseluev.itdesk.bots.runtime.BotInterpreter
+import com.github.ppotseluev.itdesk.bots.runtime.InterpreterContext
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.ConfiguredJsonCodec
