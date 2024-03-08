@@ -68,7 +68,6 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
     graph = graph,
     startFrom = start.id,
     globalCommands = Map(
-//      "/start" -> goTo(about2.id),
       "/time" -> getTime.map(_.toString).flatMap(reply[F]),
       "/help" -> reply("Here should be some help message")
     )
