@@ -16,11 +16,15 @@ class MysqlInvitationsDao[F[_]](implicit
 ) extends InvitationsDao[F] {
   import com.github.ppotseluev.itdesk.core.MysqlInvitationsDao._
 
-  def upsertInvite(invite: Invite): F[Unit] =
-    upsertInviteQuery
-      .run(InviteRecord.fromInvite(invite))
-      .transact(transactor)
-      .void
+  def upsertInvite(invite: Invite): F[Unit] = {
+    val record = InviteRecord.fromInvite(invite)
+    sql"""
+         INSERT INTO invitations (tg_username, role, valid_until)
+           VALUES (${record.tgUsername}, ${record.role}, ${record.validUntil})
+           ON DUPLICATE KEY UPDATE
+              valid_until = ${record.validUntil}
+       """.update.run.transact(transactor).void
+  }
 
   def getInvite(tgUsername: String, role: Role): F[Option[Invite]] =
     sql"""
@@ -35,17 +39,6 @@ class MysqlInvitationsDao[F[_]](implicit
 }
 
 object MysqlInvitationsDao {
-
-  private[this] val upsertInviteSql =
-    """
-       INSERT INTO invitations (tg_username, role, valid_until)
-       VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-          valid_until = $3
-    """
-
-  private val upsertInviteQuery = Update[InviteRecord](upsertInviteSql)
-
   private case class InviteRecord(
       tgUsername: String,
       role: Int,

@@ -29,7 +29,9 @@ class ExpertBot[F[_]: Sync](implicit
       time <- getTime
       ctx <- getContext
       isInviteValid <- hasValidInvite(ctx.user.username, time)
-      _ <- if (isInviteValid) registerUser(ctx) >> greet else raiseError[F](AccessDenied)
+      _ <-
+        if (isInviteValid) registerUser(ctx) >> greet
+        else reply[F]("Access denied") >> raiseError[F](AccessDenied)
     } yield ()
 
   private def hasValidInvite(tgUsername: String, nowTime: Instant): BotScript[F, Boolean] =
@@ -67,7 +69,9 @@ class ExpertBot[F[_]: Sync](implicit
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
     graph = graph,
     startFrom = start.id,
-    globalCommands = Map.empty
+    globalCommands = Map(
+      "/start" -> start.action
+    )
   )
 
   val logic = new Bot(
