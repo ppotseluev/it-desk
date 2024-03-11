@@ -3,8 +3,7 @@ package com.github.ppotseluev.itdesk.bots.runtime
 import cats.ApplicativeThrow
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.Context
-import com.github.ppotseluev.itdesk.bots.core.BotDsl
-import com.github.ppotseluev.itdesk.bots.core.BotId
+import com.github.ppotseluev.itdesk.bots.core.{BotDsl, BotError, BotId}
 
 class BotInterpreterImpl[F[_]: ApplicativeThrow](
     botStateDao: BotStateDao[F],
@@ -26,6 +25,12 @@ class BotInterpreterImpl[F[_]: ApplicativeThrow](
         f
       case BotDsl.GetContext() =>
         context.pure[F]
+      case BotDsl.RaiseError(botError) =>
+        botError match {
+          case BotError.AccessDenied =>
+            //TODO improve error handling, introduce typed errors
+            new RuntimeException("Access denied").raiseError[F, A]
+        }
     }
   }
 }

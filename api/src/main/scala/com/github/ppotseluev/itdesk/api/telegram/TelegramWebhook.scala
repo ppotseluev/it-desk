@@ -73,7 +73,8 @@ object TelegramWebhook {
 
     def handleTelegramEvent(webhookSecret: WebhookSecret)(update: Update): F[Either[Error, Unit]] =
       update.message match {
-        case Some(TgMessage(_, Some(user), chat, Some(input))) =>
+        case Some(TgMessage(_, Some(user), chat, Some(rawInput))) =>
+          val input = rawInput.stripSuffix("@it_desk_admin_bot") //TODO it's a workaround
           val chatId = chat.id.toString
           val bot = bots(webhookSecret)
           val shouldReact = bot.chatId.forall(_ == chatId)

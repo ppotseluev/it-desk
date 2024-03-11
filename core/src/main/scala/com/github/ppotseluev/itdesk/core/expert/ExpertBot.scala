@@ -6,8 +6,10 @@ import com.github.ppotseluev.itdesk.bots.Context
 import com.github.ppotseluev.itdesk.bots.core.Bot
 import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
+import com.github.ppotseluev.itdesk.bots.core.BotError.AccessDenied
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
+
 import java.time.Instant
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
@@ -27,7 +29,7 @@ class ExpertBot[F[_]: Sync](implicit
       time <- getTime
       ctx <- getContext
       isInviteValid <- hasValidInvite(ctx.user.username, time)
-      _ <- if (isInviteValid) registerUser(ctx) >> greet else doNothing[F]
+      _ <- if (isInviteValid) registerUser(ctx) >> greet else raiseError[F](AccessDenied)
     } yield ()
 
   private def hasValidInvite(tgUsername: String, nowTime: Instant): BotScript[F, Boolean] =
@@ -59,7 +61,7 @@ class ExpertBot[F[_]: Sync](implicit
     Graph(
       start ~> enterName byAnyInput,
       enterName ~> underReview byAnyInput,
-      underReview ~> underReview byAnyInput
+      underReview ~> underReview byAnyInput //todo ?
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
