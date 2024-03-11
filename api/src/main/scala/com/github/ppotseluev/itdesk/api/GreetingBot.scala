@@ -1,11 +1,13 @@
 package com.github.ppotseluev.itdesk.api
 
-import cats.effect.Sync
+import cats.effect.{Ref, Sync}
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
+
 import java.time.LocalDateTime
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
@@ -15,8 +17,8 @@ import sttp.client3.basicRequest
 
 class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
 
-  private def start = Node[F]("start", reply("Привет"))
-  private def about = Node[F]("about", reply("Я телеграм-бот!"))
+  private def start = Node[F]("start", reply("Как тебя зовут?"))
+  private def greet = Node[F]("greet", getInput.flatMap(name => reply(s"Привет $name")))
   private def skills = Node[F](
     "skills",
     reply("Я умею показывать время и цену BTC :)")
@@ -51,10 +53,10 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> about by "Show info",
-      about ~> start by "Назад",
-      about ~> skills by "Что ты умеешь?",
-      skills ~> about by "Назад",
+      start ~> greet by AnyInput,
+      greet ~> start by "Назад",
+      greet ~> skills by "Что ты умеешь?",
+      skills ~> greet by "Назад",
       skills ~> start by "В начало",
       skills ~> showTime by "Покажи время!",
       skills ~> getBtcPriceNode by "И сколько сейчас биток?",

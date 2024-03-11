@@ -81,7 +81,7 @@ object TelegramWebhook {
               trackedChats.forall(_.contains(chatId))
           if (shouldReact) {
             val bot = bots(webhookSecret)
-            val ctx = InterpreterContext(bot.botType.id, chatId)
+            val ctx = InterpreterContext(bot.botType.id, chatId, input)
             bot.logic(input).foldMap(botInterpreter(ctx)).map(_.asRight)
           } else {
             skip

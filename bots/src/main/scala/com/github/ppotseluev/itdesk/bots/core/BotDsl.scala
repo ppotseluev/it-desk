@@ -21,6 +21,8 @@ object BotDsl {
 
   private[bots] case class Execute[F[_], T](f: F[T]) extends BotDsl[F, T]
 
+  private[bots] case class GetInput[F[_]]() extends BotDsl[F, String]
+
   private class Enricher[F[_]](commands: List[BotCommand]) extends (BotDsl[F, *] ~> BotDsl[F, *]) {
     override def apply[A](fa: BotDsl[F, A]): BotDsl[F, A] = fa match {
       case Reply(message) => Reply(message.copy(availableCommands = commands))
@@ -46,4 +48,6 @@ object BotDsl {
   def execute[F[_], T](f: F[T]): BotScript[F, T] =
     liftF(Execute(f))
 
+  def getInput[F[_]]: BotScript[F, String] =
+    liftF(GetInput())
 }

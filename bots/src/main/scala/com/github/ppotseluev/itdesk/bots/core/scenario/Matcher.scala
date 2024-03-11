@@ -5,5 +5,7 @@ object Matcher {
     predicate match {
       case ExpectedInputPredicate.TextIsEqualTo(expectedText) =>
         input == expectedText
+      case ExpectedInputPredicate.AnyInput =>
+        true
     }
 }

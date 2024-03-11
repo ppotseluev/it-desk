@@ -24,8 +24,10 @@ class BotInterpreterImpl[F[_]: ApplicativeThrow](
         chatService.send(botToken(botId))(chatId)(message)
       case BotDsl.Execute(f) =>
         f
+      case BotDsl.GetInput() =>
+        input.pure[F]
     }
   }
 }
 
-case class InterpreterContext(botId: BotId, chatId: ChatId)
+case class InterpreterContext(botId: BotId, chatId: ChatId, input: String)

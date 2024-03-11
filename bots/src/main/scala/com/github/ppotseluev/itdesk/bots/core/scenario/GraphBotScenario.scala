@@ -36,6 +36,8 @@ class GraphBotScenario[F[_]](
     edge.expectedInputPredicate match {
       case ExpectedInputPredicate.TextIsEqualTo(expectedText) =>
         Some(expectedText)
+      case ExpectedInputPredicate.AnyInput =>
+        None
     }
 
   private def isMatched(command: String)(edge: graph.EdgeT): Boolean =
@@ -64,13 +66,10 @@ class GraphBotScenario[F[_]](
 
 object GraphBotScenario {
   case class EdgeLabel(order: Int, expectedInputPredicate: ExpectedInputPredicate)
-  object EdgeLabel {
-    def apply(command: String): EdgeLabel =
-      EdgeLabel(0, ExpectedInputPredicate.TextIsEqualTo(command))
-  }
 
-  implicit class LDiEdgeAssoc[N](val e: DiEdge[N]) extends AnyVal {
-    def by(command: String) = e + EdgeLabel(command)
+  implicit class EdgeLabels[N](val e: DiEdge[N]) extends AnyVal {
+    def by(predicate: ExpectedInputPredicate): LDiEdge[N] = e + EdgeLabel(0, predicate)
+    def by(input: String): LDiEdge[N] = e + by(ExpectedInputPredicate.TextIsEqualTo(input))
   }
 
   case class Node[F[_]](id: BotStateId, action: BotScript[F, Unit])
