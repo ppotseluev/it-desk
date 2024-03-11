@@ -58,9 +58,11 @@ class ExpertBot[F[_]: Sync](implicit
     "under_review",
     reply("Пожалуйста, подождите, идет проверка данных")
   )
+  private val start0 = Node[F]("start0", doNothing[F])//TODO
 
   private val graph: BotGraph[F] =
     Graph(
+      start0 ~> start byAnyInput,
       start ~> enterName byAnyInput,
       enterName ~> underReview byAnyInput,
       underReview ~> underReview byAnyInput //todo ?
@@ -68,7 +70,7 @@ class ExpertBot[F[_]: Sync](implicit
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
     graph = graph,
-    startFrom = start.id,
+    startFrom = start0.id,
     globalCommands = Map(
       "/start" -> start.action
     )
