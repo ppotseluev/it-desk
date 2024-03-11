@@ -6,8 +6,8 @@ import cats.effect.IO
 import cats.effect.Resource
 import com.github.ppotseluev.itdesk.api.telegram.TelegramWebhook
 import com.github.ppotseluev.itdesk.api.telegram.WebhookSecret
-import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core._
+import com.github.ppotseluev.itdesk.bots.impl.GreetingBot
 import com.github.ppotseluev.itdesk.bots.runtime._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramChatService
@@ -27,8 +27,8 @@ import pureconfig.module.enumeratum._
 import sttp.client3.SttpBackend
 import sttp.client3.httpclient.fs2.HttpClientFs2Backend
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
+
 import StringCodecInstances._
-import com.github.ppotseluev.itdesk.bots.impl.GreetingBot
 
 class Factory[F[_]: Async: Parallel] {
 

@@ -5,15 +5,15 @@ import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.core.Bot
 import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
-import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
+import java.time.LocalDateTime
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
-import sttp.client3.{SttpBackend, UriContext, basicRequest}
-
-import java.time.LocalDateTime
+import sttp.client3.SttpBackend
+import sttp.client3.UriContext
+import sttp.client3.basicRequest
 
 /**
  * Just an example of bots-lib usage
@@ -56,17 +56,17 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> greet by AnyInput,
-      greet ~> start byCommand "Назад",
-      greet ~> skills byCommand "Что ты умеешь?",
-      skills ~> greet byCommand "Назад",
-      skills ~> start byCommand "В начало",
-      skills ~> showTime byCommand "Покажи время!",
-      skills ~> getBtcPriceNode byCommand "И сколько сейчас биток?",
-      showTime ~> skills byCommand "Назад",
-      showTime ~> showTime byCommand "Обновить",
-      getBtcPriceNode ~> skills byCommand "Назад",
-      getBtcPriceNode ~> getBtcPriceNode byCommand "Обновить"
+      start ~> greet byAnyInput,
+      greet ~> start by "Назад",
+      greet ~> skills by "Что ты умеешь?",
+      skills ~> greet by "Назад",
+      skills ~> start by "В начало",
+      skills ~> showTime by "Покажи время!",
+      skills ~> getBtcPriceNode by "И сколько сейчас биток?",
+      showTime ~> skills by "Назад",
+      showTime ~> showTime by "Обновить",
+      getBtcPriceNode ~> skills by "Назад",
+      getBtcPriceNode ~> getBtcPriceNode by "Обновить"
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(

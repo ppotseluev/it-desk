@@ -29,6 +29,7 @@ lazy val settings = Seq(
     "-target:jvm-17",
     "-Ymacro-annotations",
     "-language:higherKinds",
+    "-language:postfixOps",
     "-Xfatal-warnings",
     "-deprecation"
   ) ++ (if (isCI) ciScalacOptions else Seq.empty),

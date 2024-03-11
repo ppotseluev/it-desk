@@ -4,7 +4,6 @@ import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.core.BotDsl.BotScript
 import com.github.ppotseluev.itdesk.bots.core._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
-import scalax.collection.GraphEdge
 import scalax.collection.GraphEdge.DiEdge
 import scalax.collection.edge.Implicits._
 import scalax.collection.edge.LBase.LEdgeImplicits
@@ -68,12 +67,14 @@ class GraphBotScenario[F[_]](
 object GraphBotScenario {
   case class EdgeLabel(order: Int, expectedInputPredicate: ExpectedInputPredicate)
 
-  implicit class EdgeLabels[N](val e: DiEdge[N]) extends AnyVal {
-    def by(predicate: ExpectedInputPredicate) =
-      e + EdgeLabel(0, predicate)
+  object EdgeLabel {
+    def command(command: String): EdgeLabel =
+      EdgeLabel(0, ExpectedInputPredicate.TextIsEqualTo(command))
+  }
 
-    def byCommand(input: String) =
-      e + by(ExpectedInputPredicate.TextIsEqualTo(input))
+  implicit class LDiEdgeAssoc[N](val e: DiEdge[N]) extends AnyVal {
+    def by(input: String) = e + EdgeLabel.command(input)
+    def byAnyInput = e + EdgeLabel(0, ExpectedInputPredicate.AnyInput)
   }
 
   case class Node[F[_]](id: BotStateId, action: BotScript[F, Unit])
