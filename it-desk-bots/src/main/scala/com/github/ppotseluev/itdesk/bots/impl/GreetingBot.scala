@@ -1,20 +1,23 @@
-package com.github.ppotseluev.itdesk.api
+package com.github.ppotseluev.itdesk.bots.impl
 
-import cats.effect.{Ref, Sync}
+import cats.effect.Sync
 import cats.implicits._
+import com.github.ppotseluev.itdesk.bots.core.Bot
+import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
-
-import java.time.LocalDateTime
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
-import sttp.client3.SttpBackend
-import sttp.client3.UriContext
-import sttp.client3.basicRequest
+import sttp.client3.{SttpBackend, UriContext, basicRequest}
 
+import java.time.LocalDateTime
+
+/**
+ * Just an example of bots-lib usage
+ */
 class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
 
   private def start = Node[F]("start", reply("Как тебя зовут?"))
@@ -66,13 +69,18 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
       getBtcPriceNode ~> getBtcPriceNode byCommand "Обновить"
     )
 
-  val scenario: GraphBotScenario[F] = new GraphBotScenario(
+  private val scenario: GraphBotScenario[F] = new GraphBotScenario(
     graph = graph,
     startFrom = start.id,
     globalCommands = Map(
       "/time" -> getTime.map(_.toString).flatMap(reply[F]),
       "/help" -> reply("Here should be some help message")
     )
+  )
+
+  val logic = new Bot(
+    scenario = scenario,
+    fallbackPolicy = FallbackPolicy.Ignore
   )
 }
 

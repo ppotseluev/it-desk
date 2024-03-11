@@ -60,11 +60,13 @@ lazy val root = project
   .in(file("."))
   .settings(name := "it-desk")
   .aggregate(
-    `bots`,
+    `storage`,
+    `bots-lib`,
+    `it-desk-bots`,
     `api`
   )
 
-lazy val `bots` = project
+lazy val `bots-lib` = project
   .settings(
     name := "bots",
     settings,
@@ -99,6 +101,16 @@ lazy val `serialization` = project.settings(
   ) ++ Dependency.circe.all
 )
 
+lazy val `it-desk-bots` = project
+  .settings(
+    name := "it-desk-bots",
+    settings,
+    libraryDependencies ++= Seq(Dependency.enumeratrum)
+  )
+  .dependsOn(
+    `bots-lib`
+  )
+
 lazy val `api` = project
   .settings(
     name := "api",
@@ -111,5 +123,5 @@ lazy val `api` = project
     assembly / mainClass := Some("com.github.ppotseluev.itdesk.api.Main")
   )
   .dependsOn(
-    `bots`
+    `it-desk-bots`
   )

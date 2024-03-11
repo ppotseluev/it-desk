@@ -27,8 +27,8 @@ import pureconfig.module.enumeratum._
 import sttp.client3.SttpBackend
 import sttp.client3.httpclient.fs2.HttpClientFs2Backend
 import sttp.tapir.server.metrics.prometheus.PrometheusMetrics
-
 import StringCodecInstances._
+import com.github.ppotseluev.itdesk.bots.impl.GreetingBot
 
 class Factory[F[_]: Async: Parallel] {
 
@@ -93,11 +93,7 @@ class Factory[F[_]: Async: Parallel] {
 
   private def botLogic(botType: BotType)(implicit sttp: SttpBackend[F, Any]): BotLogic[F] =
     botType match {
-      case BotType.GreetingBot =>
-        new Bot(
-          scenario = GreetingBot[F].scenario,
-          fallbackPolicy = FallbackPolicy.Ignore
-        )
+      case BotType.GreetingBot => GreetingBot[F].logic
     }
 
   private def bots(implicit sttp: SttpBackend[F, Any]): Map[WebhookSecret, BotBundle[F]] =
