@@ -54,16 +54,16 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
   private val graph: BotGraph[F] =
     Graph(
       start ~> greet by AnyInput,
-      greet ~> start by "Назад",
-      greet ~> skills by "Что ты умеешь?",
-      skills ~> greet by "Назад",
-      skills ~> start by "В начало",
-      skills ~> showTime by "Покажи время!",
-      skills ~> getBtcPriceNode by "И сколько сейчас биток?",
-      showTime ~> skills by "Назад",
-      showTime ~> showTime by "Обновить",
-      getBtcPriceNode ~> skills by "Назад",
-      getBtcPriceNode ~> getBtcPriceNode by "Обновить"
+      greet ~> start byCommand "Назад",
+      greet ~> skills byCommand "Что ты умеешь?",
+      skills ~> greet byCommand "Назад",
+      skills ~> start byCommand "В начало",
+      skills ~> showTime byCommand "Покажи время!",
+      skills ~> getBtcPriceNode byCommand "И сколько сейчас биток?",
+      showTime ~> skills byCommand "Назад",
+      showTime ~> showTime byCommand "Обновить",
+      getBtcPriceNode ~> skills byCommand "Назад",
+      getBtcPriceNode ~> getBtcPriceNode byCommand "Обновить"
     )
 
   val scenario: GraphBotScenario[F] = new GraphBotScenario(
