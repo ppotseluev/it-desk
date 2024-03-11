@@ -59,7 +59,6 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
       start ~> greet byAnyInput,
       greet ~> start by "Назад",
       greet ~> skills by "Что ты умеешь?",
-      skills ~> greet by "Назад",
       skills ~> start by "В начало",
       skills ~> showTime by "Покажи время!",
       skills ~> getBtcPriceNode by "И сколько сейчас биток?",
