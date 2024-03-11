@@ -1,4 +1,4 @@
-package com.github.ppotseluev.itdesk.bots.impl
+package com.github.ppotseluev.itdesk.core
 
 import cats.effect.Sync
 import cats.implicits._

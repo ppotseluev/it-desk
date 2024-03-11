@@ -2,17 +2,15 @@ package com.github.ppotseluev.itdesk.api
 
 import com.github.ppotseluev.itdesk.api.telegram.WebhookSecret
 import com.github.ppotseluev.itdesk.bots.core.BotId
+import com.github.ppotseluev.itdesk.bots.core.ChatId
 import com.github.ppotseluev.itdesk.storage.MySqlConfig
 
 case class Config(
-    telegramChatId: String,
     telegramUrl: String,
-    telegramUsersWhitelist: Set[Int],
     apiConfig: Api.Config,
     dbConfig: MySqlConfig,
     botStatesTable: String,
     bots: Map[BotType, BotConfig],
-    restrictChat: Boolean,
     localEnv: Boolean = false
 ) {
   def botWithId(id: BotId): BotConfig = {
@@ -21,11 +19,10 @@ case class Config(
       .getOrElse(throw new NoSuchElementException(s"Bot $id not found"))
     bots(botType)
   }
-
-  def telegramTrackedChats: Set[String] = Set(telegramChatId)
 }
 
 case class BotConfig(
     token: String,
-    webhookSecret: WebhookSecret
+    webhookSecret: WebhookSecret,
+    chatId: Option[ChatId]
 )

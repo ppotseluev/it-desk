@@ -6,13 +6,17 @@ import cats.effect.IO
 import cats.effect.Resource
 import com.github.ppotseluev.itdesk.api.telegram.TelegramWebhook
 import com.github.ppotseluev.itdesk.api.telegram.WebhookSecret
+import com.github.ppotseluev.itdesk.bots.Context
 import com.github.ppotseluev.itdesk.bots.core._
-import com.github.ppotseluev.itdesk.bots.impl.GreetingBot
 import com.github.ppotseluev.itdesk.bots.runtime._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramChatService
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient
-import com.github.ppotseluev.itdesk.storage.MySqlConfig
+import com.github.ppotseluev.itdesk.core.InvitationsDao
+import com.github.ppotseluev.itdesk.core.MysqlInvitationsDao
+import com.github.ppotseluev.itdesk.core.admin.AdminBot
+import com.github.ppotseluev.itdesk.core.expert.ExpertBot
+import com.github.ppotseluev.itdesk.core.expert.ExpertService
 import com.github.ppotseluev.itdesk.storage._
 import doobie.util.transactor.Transactor
 import io.circe.Codec
@@ -70,19 +74,25 @@ class Factory[F[_]: Async: Parallel] {
     implicit val botInfoCodec: Codec[BotInfo] = deriveCodec
     implicit val keySchema: Schema.String[(ChatId, BotId)] = Schema.String(implicitly)
     implicit val scenarioSchema: Schema[BotInfo] = Schema.Json(implicitly)
-    new MySqlKeyValueDao(config.botStatesTable, transactor(config.dbConfig))
+    new MySqlKeyValueDao(config.botStatesTable, transactor)
   }
 
-  private def transactor(mySqlConfig: MySqlConfig) =
+  implicit lazy val invitationsDao: InvitationsDao[F] = new MysqlInvitationsDao[F]
+
+  implicit lazy val expertService: ExpertService[F] = ExpertService[F]
+
+  private implicit lazy val transactor: Transactor[F] = {
+    import config.dbConfig._
     Transactor
       .fromDriverManager[F]
       .apply(
         "com.mysql.cj.jdbc.Driver",
-        mySqlConfig.url,
-        mySqlConfig.user,
-        mySqlConfig.password,
+        url,
+        user,
+        password,
         None
       )
+  }
 
   def withSttp[C](
       create: SttpBackend[F, Any] => C
@@ -93,7 +103,8 @@ class Factory[F[_]: Async: Parallel] {
 
   private def botLogic(botType: BotType)(implicit sttp: SttpBackend[F, Any]): BotLogic[F] =
     botType match {
-      case BotType.GreetingBot => GreetingBot[F].logic
+      case BotType.AdminBot  => AdminBot[F].logic
+      case BotType.ExpertBot => ExpertBot[F].logic
     }
 
   private def bots(implicit sttp: SttpBackend[F, Any]): Map[WebhookSecret, BotBundle[F]] =
@@ -102,23 +113,22 @@ class Factory[F[_]: Async: Parallel] {
         botType = botType,
         token = cfg.token,
         webhookSecret = cfg.webhookSecret,
-        logic = botLogic(botType)
+        logic = botLogic(botType),
+        chatId = cfg.chatId
       )
     }
 
   def telegramWebhookHandler(implicit
-      botInterpreter: InterpreterContext => BotInterpreter[F],
+      botInterpreter: Context => BotInterpreter[F],
       sttp: SttpBackend[F, Any]
   ): TelegramWebhook.Handler[F] =
     new TelegramWebhook.Handler[F](
-      allowedUsers = config.telegramUsersWhitelist,
-      trackedChats = Option.when(config.restrictChat)(config.telegramTrackedChats),
       botInterpreter = botInterpreter,
       bots = bots
     )
 
   def api(implicit
-      botInterpreter: InterpreterContext => BotInterpreter[F],
+      botInterpreter: Context => BotInterpreter[F],
       sttp: SttpBackend[F, Any]
   ): Api[F] = new Api(
     telegramHandler = telegramWebhookHandler,
