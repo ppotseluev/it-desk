@@ -50,7 +50,7 @@ object ExpertService {
           newInfo: Expert.Info
       ): F[Unit] =
         for {
-          expert <- expertDao.getExpert(user.id)
+          expert <- expertDao.getExpert(user)
           info = expert.map(_.info)
           updatedInfo = Expert.Info(
             name = newInfo.name.orElse(info.flatMap(_.name)),

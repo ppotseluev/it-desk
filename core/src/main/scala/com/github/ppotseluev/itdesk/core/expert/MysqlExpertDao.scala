@@ -3,6 +3,8 @@ package com.github.ppotseluev.itdesk.core.expert
 import cats.effect.MonadCancelThrow
 import cats.implicits._
 import com.github.ppotseluev.itdesk.core.DoobieSerialization._
+import com.github.ppotseluev.itdesk.core.expert.MysqlExpertDao.ExpertRecord
+import com.github.ppotseluev.itdesk.core.user.User
 import doobie.Transactor
 import doobie.implicits._
 
@@ -23,12 +25,28 @@ class MysqlExpertDao[F[_]](implicit
            """.update.run.transact(transactor).void
   }
 
-  override def getExpert(userId: Long): F[Option[Expert]] =
+  override def getExpert(user: User): F[Option[Expert]] =
     sql"""
         SELECT * FROM experts
-        WHERE user_id = $userId
+        WHERE user_id = ${user.id}
       """
-      .query[Expert]
+      .query[ExpertRecord]
+      .map(_.expert(user))
       .option
       .transact(transactor)
+}
+
+object MysqlExpertDao {
+  case class ExpertRecord(
+      userId: Long,
+      name: Option[String],
+      description: Option[String],
+      status: Expert.Status
+  ) {
+    def expert(user: User): Expert = Expert(
+      user = user,
+      info = Expert.Info(name = name, description = description),
+      status = status
+    )
+  }
 }
