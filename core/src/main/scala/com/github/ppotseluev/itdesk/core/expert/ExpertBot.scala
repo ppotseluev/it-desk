@@ -100,10 +100,23 @@ class ExpertBot[F[_]: Sync](implicit
       underReview ~> underReview byAnyInput
     )
 
+  private def showExperts: BotScript[F, Unit] = execute {
+    expertService.getAllExperts
+  }.flatMap { experts =>
+    experts.headOption match { //TODO
+      case Some(expert) =>
+        val txt = expert.show
+        reply(txt, expert.info.photo.map(_.asLeft))
+      case None => reply("No experts found")
+    }
+  }
+
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
     graph = graph,
     startFrom = start.id,
-    globalCommands = Map.empty
+    globalCommands = Map(
+      "/show_experts" -> showExperts
+    )
   )
 
   val logic = new Bot(
