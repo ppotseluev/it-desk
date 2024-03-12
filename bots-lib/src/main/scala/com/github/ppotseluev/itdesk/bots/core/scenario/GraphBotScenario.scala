@@ -81,10 +81,11 @@ object GraphBotScenario {
     def byAnyInput(order: Int) =
       e + EdgeLabel(order, ExpectedInputPredicate.AnyInput)
     def byAnyInput =
-      byAnyInput(0)
+      e + EdgeLabel(0, ExpectedInputPredicate.AnyInput)
     def byAnyPhoto(order: Int) =
       e + EdgeLabel(order, ExpectedInputPredicate.HasPhoto)
-    def byAnyPhoto = byAnyPhoto(0)
+    def byAnyPhoto =
+      e + EdgeLabel(0, ExpectedInputPredicate.HasPhoto)
   }
 
   case class Node[F[_]](id: BotStateId, action: BotScript[F, Unit])
