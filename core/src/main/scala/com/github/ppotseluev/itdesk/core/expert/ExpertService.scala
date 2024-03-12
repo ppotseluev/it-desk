@@ -1,5 +1,6 @@
 package com.github.ppotseluev.itdesk.core.expert
 
+import cats.Traverse
 import cats.effect.kernel.Sync
 import cats.implicits._
 import com.github.ppotseluev.itdesk.core
@@ -9,6 +10,8 @@ import com.github.ppotseluev.itdesk.core.user.Role
 import com.github.ppotseluev.itdesk.core.user.User
 import com.github.ppotseluev.itdesk.core.user.User.UserSource
 import com.github.ppotseluev.itdesk.core.user.UserDao
+import com.github.ppotseluev.itdesk.core.user.UserDao.Filter
+
 import java.time.Instant
 import scala.concurrent.duration._
 
@@ -20,6 +23,8 @@ trait ExpertService[F[_]] {
   def getInvite(tgUsername: String): F[Option[Invite]]
 
   def updateInfo(tgUserId: Long, info: Expert.Info): F[Unit]
+
+  def getAllExperts: F[Vector[Expert]]
 }
 
 object ExpertService {
@@ -80,5 +85,14 @@ object ExpertService {
           }
         } yield ()
       }
+
+      override def getAllExperts: F[Vector[Expert]] = {
+        userDao.getUsers(Filter.All).flatMap {
+          _.traverse { user =>
+            expertDao.getExpert(user)
+          }
+        }
+      }.map(_.flatten)
+
     }
 }

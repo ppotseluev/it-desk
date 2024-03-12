@@ -12,7 +12,10 @@ import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
 import sttp.client3.SttpBackend
 
-class AdminBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any], expertDao: ExpertService[F]) {
+class AdminBot[F[_]: Sync](implicit
+    sttpBackend: SttpBackend[F, Any],
+    expertService: ExpertService[F]
+) {
 
   private val start = Node.start[F]
   private val selectAction = Node[F]("select_action", reply("Выберите действие"))
@@ -24,7 +27,18 @@ class AdminBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any], expertDao:
 
   private def saveExpert(tgUsername: String): BotScript[F, Unit] = execute {
     val username = tgUsername.stripPrefix("@")
-    expertDao.inviteExpert(username).void
+    expertService.inviteExpert(username).void
+  }
+
+  private def showExperts: BotScript[F, Unit] = execute {
+    expertService.getAllExperts
+  }.flatMap { experts =>
+    experts.headOption match { //TODO
+      case Some(expert) =>
+        val txt = expert.show
+        reply(txt, expert.info.photo.map(_.asLeft))
+      case None => reply("No experts found")
+    }
   }
 
   private val graph: BotGraph[F] =
@@ -40,7 +54,7 @@ class AdminBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any], expertDao:
     graph = graph,
     startFrom = start.id,
     globalCommands = Map(
-      "/find_experts" -> reply("Not implemented yet. Stay tuned!")
+      "/show_experts" -> showExperts
     )
   )
 

@@ -1,5 +1,6 @@
 package com.github.ppotseluev.itdesk.core.expert
 
+import cats.Show
 import com.github.ppotseluev.itdesk.core.expert.Expert.Status
 import com.github.ppotseluev.itdesk.core.user.User
 import enumeratum.values.IntEnum
@@ -12,6 +13,13 @@ case class Expert(
 )
 
 object Expert {
+  implicit val show: Show[Expert] = Show.show { expert =>
+    s"""
+      |${expert.info.name.getOrElse("")}\n\n
+      |${expert.info.description.getOrElse("")}
+      |""".stripMargin
+  }
+
   case class Info(
       name: Option[String],
       description: Option[String],

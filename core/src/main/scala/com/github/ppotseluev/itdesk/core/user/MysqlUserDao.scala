@@ -4,6 +4,7 @@ import cats.effect.MonadCancelThrow
 import cats.implicits._
 import com.github.ppotseluev.itdesk.core.DoobieSerialization._
 import com.github.ppotseluev.itdesk.core.user.User.UserSource
+import com.github.ppotseluev.itdesk.core.user.UserDao.Filter
 import doobie.Transactor
 import doobie.implicits._
 
@@ -30,4 +31,14 @@ class MysqlUserDao[F[_]](implicit
       .query[User]
       .option
       .transact(transactor)
+
+  override def getUsers(filter: UserDao.Filter): F[Vector[User]] = filter match {
+    case Filter.All =>
+      sql"""
+          SELECT * FROM users
+        """
+        .query[User]
+        .to[Vector]
+        .transact(transactor)
+  }
 }
