@@ -31,7 +31,13 @@ object TelegramWebhook {
   }
 
   @ConfiguredJsonCodec
-  case class User(id: UserId, firstName: String, lastName: Option[String], username: Option[String])
+  case class User(
+      id: UserId,
+      firstName: String,
+      lastName: Option[String],
+      username: Option[String],
+      isBot: Boolean
+  )
 
   object User {
     implicit val codec: Codec[User] = deriveCodec
@@ -73,7 +79,7 @@ object TelegramWebhook {
 
     def handleTelegramEvent(webhookSecret: WebhookSecret)(update: Update): F[Either[Error, Unit]] =
       update.message match {
-        case Some(TgMessage(_, Some(user), chat, Some(rawInput))) =>
+        case Some(TgMessage(_, Some(user), chat, Some(rawInput))) if !user.isBot =>
           val input = rawInput.stripSuffix("@it_desk_admin_bot") //TODO it's a workaround
           val chatId = chat.id.toString
           val bot = bots(webhookSecret)

@@ -44,12 +44,13 @@ class GraphBotScenario[F[_]](
     Matcher.isMatched(command)(edge.expectedInputPredicate)
 
   def transit(stateId: BotStateId, command: String): Option[BotState[F]] =
-    states
-      .get(stateId)
-      .flatMap(_.outgoing.find(isMatched(command)))
-      .map(_.to)
-      .map(toBotState)
-      .orElse(globalState(stateId, command))
+    globalState(stateId, command).orElse {
+      states
+        .get(stateId)
+        .flatMap(_.outgoing.toList.sortBy(_.order).find(isMatched(command)))
+        .map(_.to)
+        .map(toBotState)
+    }
 
   private def get(stateId: BotStateId): Option[BotState[F]] =
     states.get(stateId).map(toBotState)
@@ -68,13 +69,17 @@ object GraphBotScenario {
   case class EdgeLabel(order: Int, expectedInputPredicate: ExpectedInputPredicate)
 
   object EdgeLabel {
-    def command(command: String): EdgeLabel =
-      EdgeLabel(0, ExpectedInputPredicate.TextIsEqualTo(command))
+    def command(command: String, order: Int): EdgeLabel =
+      EdgeLabel(order, ExpectedInputPredicate.TextIsEqualTo(command))
   }
 
   implicit class LDiEdgeAssoc[N](val e: DiEdge[N]) extends AnyVal {
-    def by(input: String) = e + EdgeLabel.command(input)
-    def byAnyInput = e + EdgeLabel(0, ExpectedInputPredicate.AnyInput)
+    def by(input: String, order: Int = 0) =
+      e + EdgeLabel.command(input, order)
+    def byAnyInput(order: Int) =
+      e + EdgeLabel(order, ExpectedInputPredicate.AnyInput)
+    def byAnyInput =
+      e + EdgeLabel(0, ExpectedInputPredicate.AnyInput)
   }
 
   case class Node[F[_]](id: BotStateId, action: BotScript[F, Unit])

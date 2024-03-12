@@ -22,13 +22,15 @@ class AdminBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any], expertDao:
   )
 
   private def saveExpert(tgUsername: String): BotScript[F, Unit] = execute {
-    expertDao.inviteExpert(tgUsername).void
+    val username = tgUsername.stripPrefix("@")
+    expertDao.inviteExpert(username).void
   }
 
   private val graph: BotGraph[F] =
     Graph(
       start ~> addExpert by "Добавить эксперта",
-      addExpert ~> expertAdded byAnyInput, //TODO validate username format?
+      addExpert ~> start by ("Отмена", 0),
+      addExpert ~> expertAdded byAnyInput 1,
       expertAdded ~> start by "Ok"
     )
 
@@ -37,7 +39,6 @@ class AdminBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any], expertDao:
     startFrom = start.id,
     globalCommands = Map(
       "/find_experts" -> reply("Not implemented yet. Stay tuned!"),
-      "/start" -> start.action
     )
   )
 
