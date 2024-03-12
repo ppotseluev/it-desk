@@ -16,7 +16,11 @@ import com.github.ppotseluev.itdesk.core.InvitationsDao
 import com.github.ppotseluev.itdesk.core.MysqlInvitationsDao
 import com.github.ppotseluev.itdesk.core.admin.AdminBot
 import com.github.ppotseluev.itdesk.core.expert.ExpertBot
+import com.github.ppotseluev.itdesk.core.expert.ExpertDao
 import com.github.ppotseluev.itdesk.core.expert.ExpertService
+import com.github.ppotseluev.itdesk.core.expert.MysqlExpertDao
+import com.github.ppotseluev.itdesk.core.user.MysqlUserDao
+import com.github.ppotseluev.itdesk.core.user.UserDao
 import com.github.ppotseluev.itdesk.storage._
 import doobie.util.transactor.Transactor
 import io.circe.Codec
@@ -77,6 +81,8 @@ class Factory[F[_]: Async: Parallel] {
   }
 
   implicit lazy val invitationsDao: InvitationsDao[F] = new MysqlInvitationsDao[F]
+  implicit lazy val userDao: UserDao[F] = new MysqlUserDao[F]
+  implicit lazy val expertDao: ExpertDao[F] = new MysqlExpertDao[F]
 
   implicit lazy val expertService: ExpertService[F] = ExpertService[F]
 

@@ -22,6 +22,7 @@ CREATE TABLE users(
 CREATE TABLE experts(
     `user_id`         INT NOT NULL,
     `name`            VARCHAR(100),
+    `description`     TEXT,
     `status`          TINYINT,
     PRIMARY KEY (`user_id`),
     CONSTRAINT FK_UserId FOREIGN KEY (`user_id`) REFERENCES users(`id`)

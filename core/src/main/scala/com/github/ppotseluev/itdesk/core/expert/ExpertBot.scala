@@ -16,7 +16,7 @@ import sttp.client3.SttpBackend
 
 class ExpertBot[F[_]: Sync](implicit
     sttpBackend: SttpBackend[F, Any],
-    expertDao: ExpertService[F]
+    expertService: ExpertService[F]
 ) {
   private val getTime: BotScript[F, Instant] = execute(Sync[F].delay(Instant.now))
   private val greet: BotScript[F, Unit] =
@@ -35,23 +35,43 @@ class ExpertBot[F[_]: Sync](implicit
 
   private def hasValidInvite(tgUsername: String, nowTime: Instant): BotScript[F, Boolean] =
     execute {
-      expertDao.getInvite(tgUsername).map {
+      expertService.getInvite(tgUsername).map {
         _.exists { invite =>
           invite.validUntil.isAfter(nowTime)
         }
       }
     }
 
-  private def registerUser(ctx: Context): BotScript[F, Unit] =
-    reply("user-register-call-stub") //TODO
-  private def saveName(input: String): BotScript[F, Unit] =
-    reply("user-save-name-call-stub") //TODO
+  private def registerUser(ctx: Context): BotScript[F, Unit] = execute {
+    expertService.register(ctx.user.id)
+  }
+
+  private def updateInfo(f: (Context, Expert.Info) => Expert.Info): BotScript[F, Unit] =
+    getContext[F].flatMap { ctx =>
+      execute {
+        expertService.updateInfo(
+          tgUserId = ctx.user.id,
+          info = f(ctx, Expert.Info.empty)
+        )
+      }
+    }
+
+  private def name(ctx: Context, info: Expert.Info): Expert.Info =
+    info.copy(name = ctx.input.some)
+
+  private def description(ctx: Context, info: Expert.Info): Expert.Info =
+    info.copy(description = ctx.input.some)
 
   private val start = Node.start[F]
   private val checkExpert = Node[F]("check", checkExpertScript)
   private val enterName = Node[F](
     "enter_name",
-    (getInput[F] >>= saveName) >>
+    updateInfo(name) >>
+      reply("Ок. Теперь расскажите, пожалуйста, о себе. Это описание будет видно студентам")
+  )
+  private val enterDescription = Node[F](
+    "enter_description",
+    updateInfo(description) >>
       reply("Спасибо, что заполнили анкету! Мы уже проверяем данные и скоро активируем ваш профиль")
   )
   private val underReview = Node[F](
@@ -63,8 +83,9 @@ class ExpertBot[F[_]: Sync](implicit
     Graph(
       start ~> checkExpert by "/start",
       checkExpert ~> enterName byAnyInput,
-      enterName ~> underReview byAnyInput,
-      underReview ~> underReview byAnyInput //todo ?
+      enterName ~> enterDescription byAnyInput,
+      enterDescription ~> underReview byAnyInput,
+      underReview ~> underReview byAnyInput
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
