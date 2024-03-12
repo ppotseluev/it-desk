@@ -21,7 +21,8 @@ class MysqlExpertDao[F[_]](implicit
                ON DUPLICATE KEY UPDATE
                   name = ${info.name},
                   description = ${info.description},
-                  status = ${expert.status}
+                  status = ${expert.status},
+                  photo = ${info.photo}
            """.update.run.transact(transactor).void
   }
 
@@ -41,11 +42,12 @@ object MysqlExpertDao {
       userId: Long,
       name: Option[String],
       description: Option[String],
-      status: Expert.Status
+      status: Expert.Status,
+      photo: Option[String]
   ) {
     def expert(user: User): Expert = Expert(
       user = user,
-      info = Expert.Info(name = name, description = description),
+      info = Expert.Info(name = name, description = description, photo = photo),
       status = status
     )
   }

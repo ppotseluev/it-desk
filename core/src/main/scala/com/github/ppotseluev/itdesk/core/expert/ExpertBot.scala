@@ -57,21 +57,31 @@ class ExpertBot[F[_]: Sync](implicit
     }
 
   private def name(ctx: Context, info: Expert.Info): Expert.Info =
-    info.copy(name = ctx.input.some)
+    info.copy(name = ctx.inputText.some)
 
   private def description(ctx: Context, info: Expert.Info): Expert.Info =
-    info.copy(description = ctx.input.some)
+    info.copy(description = ctx.inputText.some)
+
+  private def photo(ctx: Context, info: Expert.Info): Expert.Info = {
+    val photo = ctx.inputPhoto.flatMap(_.maxByOption(_.width))
+    info.copy(photo = photo.map(_.fileId))
+  }
 
   private val start = Node.start[F]
-  private val checkExpert = Node[F]("check", checkExpertScript)
-  private val enterName = Node[F](
+  private val verifyAndAskName = Node[F]("check", checkExpertScript)
+  private val nameAdded = Node[F](
     "enter_name",
     updateInfo(name) >>
       reply("Ок. Теперь расскажите, пожалуйста, о себе. Это описание будет видно студентам")
   )
-  private val enterDescription = Node[F](
+  private val descriptionAdded = Node[F](
     "enter_description",
     updateInfo(description) >>
+      reply("Теперь загрузите фото")
+  )
+  private val photoAdded = Node[F](
+    "add_photo",
+    updateInfo(photo) >>
       reply("Спасибо, что заполнили анкету! Мы уже проверяем данные и скоро активируем ваш профиль")
   )
   private val underReview = Node[F](
@@ -81,10 +91,11 @@ class ExpertBot[F[_]: Sync](implicit
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> checkExpert by "/start",
-      checkExpert ~> enterName byAnyInput,
-      enterName ~> enterDescription byAnyInput,
-      enterDescription ~> underReview byAnyInput,
+      start ~> verifyAndAskName by "/start",
+      verifyAndAskName ~> nameAdded byAnyInput,
+      nameAdded ~> descriptionAdded byAnyInput,
+      descriptionAdded ~> photoAdded byAnyPhoto,
+      photoAdded ~> underReview byAnyInput,
       underReview ~> underReview byAnyInput
     )
 

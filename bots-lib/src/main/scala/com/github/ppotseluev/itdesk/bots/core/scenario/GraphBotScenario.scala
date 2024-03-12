@@ -1,6 +1,7 @@
 package com.github.ppotseluev.itdesk.bots.core.scenario
 
 import cats.implicits._
+import com.github.ppotseluev.itdesk.bots.Context
 import com.github.ppotseluev.itdesk.bots.core.BotDsl.BotScript
 import com.github.ppotseluev.itdesk.bots.core.BotDsl.doNothing
 import com.github.ppotseluev.itdesk.bots.core._
@@ -37,18 +38,18 @@ class GraphBotScenario[F[_]](
     edge.expectedInputPredicate match {
       case ExpectedInputPredicate.TextIsEqualTo(expectedText) =>
         Some(expectedText)
-      case ExpectedInputPredicate.AnyInput =>
+      case ExpectedInputPredicate.AnyInput | ExpectedInputPredicate.HasPhoto =>
         None
     }
 
-  private def isMatched(command: String)(edge: graph.EdgeT): Boolean =
-    Matcher.isMatched(command)(edge.expectedInputPredicate)
+  private def isMatched(ctx: Context)(edge: graph.EdgeT): Boolean =
+    Matcher.isMatched(ctx)(edge.expectedInputPredicate)
 
-  def transit(stateId: BotStateId, command: String): Option[BotState[F]] =
-    globalState(stateId, command).orElse {
+  def transit(stateId: BotStateId, ctx: Context): Option[BotState[F]] =
+    globalState(stateId, ctx.inputText).orElse {
       states
         .get(stateId)
-        .flatMap(_.outgoing.toList.sortBy(_.order).find(isMatched(command)))
+        .flatMap(_.outgoing.toList.sortBy(_.order).find(isMatched(ctx)))
         .map(_.to)
         .map(toBotState)
     }
@@ -81,6 +82,8 @@ object GraphBotScenario {
       e + EdgeLabel(order, ExpectedInputPredicate.AnyInput)
     def byAnyInput =
       e + EdgeLabel(0, ExpectedInputPredicate.AnyInput)
+    def byAnyPhoto =
+      e + EdgeLabel(0, ExpectedInputPredicate.HasPhoto)
   }
 
   case class Node[F[_]](id: BotStateId, action: BotScript[F, Unit])

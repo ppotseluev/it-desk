@@ -14,10 +14,11 @@ case class Expert(
 object Expert {
   case class Info(
       name: Option[String],
-      description: Option[String]
+      description: Option[String],
+      photo: Option[String]
   )
   object Info {
-    val empty: Info = Info(None, None)
+    val empty: Info = Info(None, None, None)
   }
 
   sealed abstract class Status(val value: Int) extends IntEnumEntry

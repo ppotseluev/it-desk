@@ -5,6 +5,7 @@ import cats.free.Free.liftF
 import cats.implicits._
 import cats.~>
 import com.github.ppotseluev.itdesk.bots.Context
+import com.github.ppotseluev.itdesk.bots.core.Message.Payload
 
 sealed trait BotDsl[+F[_], T]
 
@@ -19,7 +20,7 @@ object BotDsl {
 
   private[bots] case class SaveState(botStateId: BotStateId) extends BotDsl[Nothing, Unit]
 
-  private[bots] case class Reply(message: Message.Payload) extends BotDsl[Nothing, Unit]
+  private[bots] case class Reply(message: Message) extends BotDsl[Nothing, Unit]
 
   private[bots] case class Execute[F[_], T](f: F[T]) extends BotDsl[F, T]
 
@@ -46,14 +47,17 @@ object BotDsl {
   private[bots] def saveState[F[_]](botStateId: BotStateId): BotScript[F, Unit] =
     liftF(SaveState(botStateId))
 
-  def reply[F[_]](text: String): BotScript[F, Unit] =
-    liftF(Reply(Message.Payload(text, Seq.empty)))
+  def reply[F[_]](
+      text: String,
+      photo: Option[Either[String, Array[Byte]]] = None
+  ): BotScript[F, Unit] =
+    liftF(Reply(Message(Payload(text, photo), Seq.empty)))
 
   def execute[F[_], T](f: F[T]): BotScript[F, T] = liftF(Execute(f))
 
   def getContext[F[_]]: BotScript[F, Context] = liftF(GetContext())
 
-  def getInput[F[_]]: BotScript[F, String] = getContext.map(_.input)
+  def getInput[F[_]]: BotScript[F, String] = getContext.map(_.inputText)
 
   def doNothing[F[_]]: BotScript[F, Unit] = ().pure[BotScript[F, *]]
 

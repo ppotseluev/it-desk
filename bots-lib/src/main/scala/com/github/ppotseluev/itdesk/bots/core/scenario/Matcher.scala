@@ -1,11 +1,15 @@
 package com.github.ppotseluev.itdesk.bots.core.scenario
 
+import com.github.ppotseluev.itdesk.bots.Context
+
 object Matcher {
-  def isMatched(input: String)(predicate: ExpectedInputPredicate): Boolean =
+  def isMatched(ctx: Context)(predicate: ExpectedInputPredicate): Boolean =
     predicate match {
       case ExpectedInputPredicate.TextIsEqualTo(expectedText) =>
-        input == expectedText
+        ctx.inputText == expectedText
       case ExpectedInputPredicate.AnyInput =>
         true
+      case ExpectedInputPredicate.HasPhoto =>
+        ctx.inputPhoto.exists(_.nonEmpty)
     }
 }

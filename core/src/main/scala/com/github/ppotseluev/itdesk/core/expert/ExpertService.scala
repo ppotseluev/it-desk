@@ -54,7 +54,8 @@ object ExpertService {
           info = expert.map(_.info)
           updatedInfo = Expert.Info(
             name = newInfo.name.orElse(info.flatMap(_.name)),
-            description = newInfo.description.orElse(info.flatMap(_.description))
+            description = newInfo.description.orElse(info.flatMap(_.description)),
+            photo = newInfo.photo.orElse(info.flatMap(_.photo))
           )
           updatedExpert = expert match {
             case Some(value) => value.copy(info = updatedInfo)

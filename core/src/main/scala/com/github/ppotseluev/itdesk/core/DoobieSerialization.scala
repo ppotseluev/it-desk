@@ -3,11 +3,10 @@ package com.github.ppotseluev.itdesk.core
 import com.github.ppotseluev.itdesk.core.expert.Expert
 import com.github.ppotseluev.itdesk.core.user.Role
 import doobie.Get
+import doobie.implicits.javasql._
 import doobie.util.Put
 import enumeratum.values.IntEnum
-import doobie.implicits.javasql._
 import enumeratum.values.IntEnumEntry
-
 import java.sql.Timestamp
 import java.time.Instant
 

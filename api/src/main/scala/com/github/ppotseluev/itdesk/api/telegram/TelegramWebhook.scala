@@ -5,6 +5,7 @@ import cats.effect.kernel.Async
 import cats.implicits._
 import com.github.ppotseluev.itdesk.api.BotBundle
 import com.github.ppotseluev.itdesk.bots.Context
+import com.github.ppotseluev.itdesk.bots.TgPhoto
 import com.github.ppotseluev.itdesk.bots.TgUser
 import com.github.ppotseluev.itdesk.bots.core.BotError
 import com.github.ppotseluev.itdesk.bots.runtime.BotInterpreter
@@ -46,7 +47,22 @@ object TelegramWebhook extends LazyLogging {
   }
 
   @ConfiguredJsonCodec
-  case class TgMessage(messageId: Int, from: Option[User], chat: Chat, text: Option[String])
+  case class Photo(
+      fileId: String,
+      fileUniqueId: String,
+      fileSize: Int,
+      width: Int,
+      height: Int
+  )
+
+  @ConfiguredJsonCodec
+  case class TgMessage(
+      messageId: Int,
+      from: Option[User],
+      chat: Chat,
+      text: Option[String],
+      photo: Option[List[Photo]]
+  )
 
   object TgMessage {
     implicit val codec: Codec[TgMessage] = deriveCodec
@@ -81,23 +97,35 @@ object TelegramWebhook extends LazyLogging {
 
     def handleTelegramEvent(webhookSecret: WebhookSecret)(update: Update): F[Either[Error, Unit]] =
       update.message match {
-        case Some(TgMessage(_, Some(user), chat, Some(rawInput))) if !user.isBot =>
+        case Some(TgMessage(_, Some(user), chat, Some(rawInput), photo)) if !user.isBot =>
           val input = rawInput.stripSuffix("@it_desk_admin_bot") //TODO it's a workaround
           val chatId = chat.id.toString
           val bot = bots(webhookSecret)
           val shouldReact = bot.chatId.forall(_ == chatId)
           if (shouldReact) {
+            val photos = photo.map {
+              _.map { p =>
+                TgPhoto(
+                  fileId = p.fileId,
+                  fileUniqueId = p.fileUniqueId,
+                  fileSize = p.fileSize,
+                  width = p.width,
+                  height = p.height
+                )
+              }
+            }
             val ctx = Context(
               botToken = bot.token,
               botId = bot.botType.id,
               chatId = chatId,
-              input = input,
+              inputText = input,
               user = TgUser(
                 id = user.id,
                 username = user.username.getOrElse("UNDEFINED_USERNAME")
-              )
+              ),
+              inputPhoto = photos
             )
-            val f = bot.logic(input).foldMap(botInterpreter(ctx))
+            val f = bot.logic(ctx).foldMap(botInterpreter(ctx))
             f.recoverWith { case e: BotError =>
               Sync[F].delay(logger.warn("Bot execution exception", e))
             }.map(_.asRight)
