@@ -4,15 +4,19 @@ import com.github.ppotseluev.itdesk.core.expert.Expert
 import com.github.ppotseluev.itdesk.core.user.Role
 import doobie.Get
 import doobie.util.Put
-import doobie.util.meta.MetaConstructors
-import doobie.util.meta.TimeMetaInstances
 import enumeratum.values.IntEnum
+import doobie.implicits.javasql._
 import enumeratum.values.IntEnumEntry
 
-object DoobieSerialization extends MetaConstructors with TimeMetaInstances {
+import java.sql.Timestamp
+import java.time.Instant
+
+object DoobieSerialization {
   def get[T <: IntEnumEntry](`enum`: IntEnum[T]): Get[T] = Get[Int].tmap(`enum`.withValue)
   def put[T <: IntEnumEntry]: Put[T] = Put[Int].tcontramap(_.value)
 
+  implicit val getTime: Get[Instant] = Get[Timestamp].tmap(_.toInstant)
+  implicit val putTime: Put[Instant] = Put[Timestamp].tcontramap(Timestamp.from)
   implicit val getRole: Get[Role] = get(Role)
   implicit val putRole: Put[Role] = put[Role]
   implicit val getExpertStatus: Get[Expert.Status] = get(Expert.Status)
