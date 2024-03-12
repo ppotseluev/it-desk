@@ -1,11 +1,14 @@
 package com.github.ppotseluev.itdesk.api.telegram
 
-import cats.Monad
+import cats.effect.Sync
 import cats.effect.kernel.Async
 import cats.implicits._
 import com.github.ppotseluev.itdesk.api.BotBundle
+import com.github.ppotseluev.itdesk.bots.Context
+import com.github.ppotseluev.itdesk.bots.TgUser
+import com.github.ppotseluev.itdesk.bots.core.BotError
 import com.github.ppotseluev.itdesk.bots.runtime.BotInterpreter
-import com.github.ppotseluev.itdesk.bots.runtime.InterpreterContext
+import com.typesafe.scalalogging.LazyLogging
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.ConfiguredJsonCodec
@@ -19,7 +22,7 @@ import sttp.tapir.header
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.stringBody
 
-object TelegramWebhook {
+object TelegramWebhook extends LazyLogging {
   implicit private val circeConfig: Configuration = Configuration.default.withSnakeCaseMemberNames
 
   @ConfiguredJsonCodec
@@ -30,7 +33,13 @@ object TelegramWebhook {
   }
 
   @ConfiguredJsonCodec
-  case class User(id: UserId, firstName: String, lastName: Option[String], username: Option[String])
+  case class User(
+      id: UserId,
+      firstName: String,
+      lastName: Option[String],
+      username: Option[String],
+      isBot: Boolean
+  )
 
   object User {
     implicit val codec: Codec[User] = deriveCodec
@@ -62,10 +71,8 @@ object TelegramWebhook {
       .errorOut(stringBody)
       .securityIn(auth.apiKey(header[WebhookSecret]("X-Telegram-Bot-Api-Secret-Token")))
 
-  class Handler[F[_]: Monad](
-      allowedUsers: Set[UserId],
-      trackedChats: Option[Set[String]],
-      botInterpreter: InterpreterContext => BotInterpreter[F],
+  class Handler[F[_]: Sync](
+      botInterpreter: Context => BotInterpreter[F],
       bots: Map[WebhookSecret, BotBundle[F]]
   ) {
     private val success = ().asRight[Error].pure[F]
@@ -74,15 +81,26 @@ object TelegramWebhook {
 
     def handleTelegramEvent(webhookSecret: WebhookSecret)(update: Update): F[Either[Error, Unit]] =
       update.message match {
-        case Some(TgMessage(_, Some(user), chat, Some(input))) =>
+        case Some(TgMessage(_, Some(user), chat, Some(rawInput))) if !user.isBot =>
+          val input = rawInput.stripSuffix("@it_desk_admin_bot") //TODO it's a workaround
           val chatId = chat.id.toString
-          val shouldReact =
-            allowedUsers.contains(user.id) &&
-              trackedChats.forall(_.contains(chatId))
+          val bot = bots(webhookSecret)
+          val shouldReact = bot.chatId.forall(_ == chatId)
           if (shouldReact) {
-            val bot = bots(webhookSecret)
-            val ctx = InterpreterContext(bot.botType.id, chatId)
-            bot.logic(input).foldMap(botInterpreter(ctx)).map(_.asRight)
+            val ctx = Context(
+              botToken = bot.token,
+              botId = bot.botType.id,
+              chatId = chatId,
+              input = input,
+              user = TgUser(
+                id = user.id,
+                username = user.username.getOrElse("UNDEFINED_USERNAME")
+              )
+            )
+            val f = bot.logic(input).foldMap(botInterpreter(ctx))
+            f.recoverWith { case e: BotError =>
+              Sync[F].delay(logger.warn("Bot execution exception", e))
+            }.map(_.asRight)
           } else {
             skip
           }

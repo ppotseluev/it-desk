@@ -2,15 +2,13 @@ package com.github.ppotseluev.itdesk.bots.runtime
 
 import cats.ApplicativeThrow
 import cats.implicits._
+import com.github.ppotseluev.itdesk.bots.Context
 import com.github.ppotseluev.itdesk.bots.core.BotDsl
-import com.github.ppotseluev.itdesk.bots.core.BotId
-import com.github.ppotseluev.itdesk.bots.core.ChatId
 
 class BotInterpreterImpl[F[_]: ApplicativeThrow](
     botStateDao: BotStateDao[F],
-    chatService: ChatService[F],
-    botToken: BotId => String //todo take from ctx?
-)(context: InterpreterContext)
+    chatService: ChatService[F]
+)(context: Context)
     extends BotInterpreter[F] {
 
   def apply[A](botDsl: BotDsl[F, A]): F[A] = {
@@ -21,11 +19,13 @@ class BotInterpreterImpl[F[_]: ApplicativeThrow](
       case BotDsl.SaveState(botStateId) =>
         botStateDao.put(chatId -> botId, BotInfo(botStateId))
       case BotDsl.Reply(message) =>
-        chatService.send(botToken(botId))(chatId)(message)
+        chatService.send(botToken)(chatId)(message)
       case BotDsl.Execute(f) =>
         f
+      case BotDsl.GetContext() =>
+        context.pure[F]
+      case BotDsl.RaiseError(botError) =>
+        botError.raiseError[F, A]
     }
   }
 }
-
-case class InterpreterContext(botId: BotId, chatId: ChatId)

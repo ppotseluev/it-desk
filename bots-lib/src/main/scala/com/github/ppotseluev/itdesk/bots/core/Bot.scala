@@ -1,6 +1,5 @@
 package com.github.ppotseluev.itdesk.bots.core
 
-import cats.syntax.applicative._
 import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
@@ -20,15 +19,15 @@ class Bot[F[_]](
         case Some(newState) => process(newState)
         case None =>
           fallbackPolicy match {
-            case FallbackPolicy.Ignore => ().pure[BotScript[F, *]]
+            case FallbackPolicy.Ignore => doNothing[F]
           }
       }
     } yield ()
   }
 
   private def process(newState: BotState[F]): BotScript[F, Unit] = for {
-    _ <- saveState(newState.id)
     _ <- newState.action.withAvailableCommands(newState.availableCommands)
+    _ <- saveState(newState.id)
   } yield ()
 }
 

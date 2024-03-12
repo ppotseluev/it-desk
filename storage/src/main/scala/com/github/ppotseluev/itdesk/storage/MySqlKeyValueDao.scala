@@ -3,12 +3,12 @@ package com.github.ppotseluev.itdesk.storage
 import cats.effect.MonadCancelThrow
 import cats.instances.string._
 import cats.syntax.functor._
+import doobie.Get
+import doobie.Put
 import doobie.implicits._
 import doobie.util.fragment.Fragment
 import doobie.util.transactor.Transactor
-import doobie.{Get, Put}
 import io.circe.parser
-
 import scala.reflect.runtime.universe.TypeTag
 
 class MySqlKeyValueDao[F[_], K, V: TypeTag](tableName: String, transactor: Transactor[F])(implicit

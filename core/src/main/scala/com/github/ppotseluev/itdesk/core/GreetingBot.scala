@@ -1,7 +1,9 @@
-package com.github.ppotseluev.itdesk.api
+package com.github.ppotseluev.itdesk.core
 
 import cats.effect.Sync
 import cats.implicits._
+import com.github.ppotseluev.itdesk.bots.core.Bot
+import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
@@ -13,10 +15,13 @@ import sttp.client3.SttpBackend
 import sttp.client3.UriContext
 import sttp.client3.basicRequest
 
+/**
+ * Just an example of bots-lib usage
+ */
 class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
 
-  private def start = Node[F]("start", reply("Привет"))
-  private def about = Node[F]("about", reply("Я телеграм-бот!"))
+  private def start = Node[F]("start", reply("Как тебя зовут?"))
+  private def greet = Node[F]("greet", getInput.flatMap(name => reply(s"Привет $name")))
   private def skills = Node[F](
     "skills",
     reply("Я умею показывать время и цену BTC :)")
@@ -51,10 +56,9 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> about by "Show info",
-      about ~> start by "Назад",
-      about ~> skills by "Что ты умеешь?",
-      skills ~> about by "Назад",
+      start ~> greet byAnyInput,
+      greet ~> start by "Назад",
+      greet ~> skills by "Что ты умеешь?",
       skills ~> start by "В начало",
       skills ~> showTime by "Покажи время!",
       skills ~> getBtcPriceNode by "И сколько сейчас биток?",
@@ -64,13 +68,18 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
       getBtcPriceNode ~> getBtcPriceNode by "Обновить"
     )
 
-  val scenario: GraphBotScenario[F] = new GraphBotScenario(
+  private val scenario: GraphBotScenario[F] = new GraphBotScenario(
     graph = graph,
     startFrom = start.id,
     globalCommands = Map(
       "/time" -> getTime.map(_.toString).flatMap(reply[F]),
       "/help" -> reply("Here should be some help message")
     )
+  )
+
+  val logic = new Bot(
+    scenario = scenario,
+    fallbackPolicy = FallbackPolicy.Ignore
   )
 }
 

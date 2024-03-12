@@ -29,6 +29,7 @@ lazy val settings = Seq(
     "-target:jvm-17",
     "-Ymacro-annotations",
     "-language:higherKinds",
+    "-language:postfixOps",
     "-Xfatal-warnings",
     "-deprecation"
   ) ++ (if (isCI) ciScalacOptions else Seq.empty),
@@ -60,11 +61,13 @@ lazy val root = project
   .in(file("."))
   .settings(name := "it-desk")
   .aggregate(
-    `bots`,
+    `storage`,
+    `bots-lib`,
+    `core`,
     `api`
   )
 
-lazy val `bots` = project
+lazy val `bots-lib` = project
   .settings(
     name := "bots",
     settings,
@@ -99,6 +102,16 @@ lazy val `serialization` = project.settings(
   ) ++ Dependency.circe.all
 )
 
+lazy val `core` = project
+  .settings(
+    name := "core",
+    settings,
+    libraryDependencies ++= Seq(Dependency.enumeratrum)
+  )
+  .dependsOn(
+    `bots-lib`
+  )
+
 lazy val `api` = project
   .settings(
     name := "api",
@@ -111,5 +124,5 @@ lazy val `api` = project
     assembly / mainClass := Some("com.github.ppotseluev.itdesk.api.Main")
   )
   .dependsOn(
-    `bots`
+    `core`
   )

@@ -2,7 +2,9 @@ package com.github.ppotseluev.itdesk.bots.core
 
 import cats.free.Free
 import cats.free.Free.liftF
+import cats.implicits._
 import cats.~>
+import com.github.ppotseluev.itdesk.bots.Context
 
 sealed trait BotDsl[+F[_], T]
 
@@ -20,6 +22,10 @@ object BotDsl {
   private[bots] case class Reply(message: Message.Payload) extends BotDsl[Nothing, Unit]
 
   private[bots] case class Execute[F[_], T](f: F[T]) extends BotDsl[F, T]
+
+  private[bots] case class GetContext[F[_]]() extends BotDsl[F, Context]
+
+  private[bots] case class RaiseError(botError: BotError) extends BotDsl[Nothing, Unit]
 
   private class Enricher[F[_]](commands: List[BotCommand]) extends (BotDsl[F, *] ~> BotDsl[F, *]) {
     override def apply[A](fa: BotDsl[F, A]): BotDsl[F, A] = fa match {
@@ -43,7 +49,14 @@ object BotDsl {
   def reply[F[_]](text: String): BotScript[F, Unit] =
     liftF(Reply(Message.Payload(text, Seq.empty)))
 
-  def execute[F[_], T](f: F[T]): BotScript[F, T] =
-    liftF(Execute(f))
+  def execute[F[_], T](f: F[T]): BotScript[F, T] = liftF(Execute(f))
 
+  def getContext[F[_]]: BotScript[F, Context] = liftF(GetContext())
+
+  def getInput[F[_]]: BotScript[F, String] = getContext.map(_.input)
+
+  def doNothing[F[_]]: BotScript[F, Unit] = ().pure[BotScript[F, *]]
+
+  def raiseError[F[_]](botError: BotError): BotScript[F, Unit] =
+    liftF(RaiseError(botError))
 }
