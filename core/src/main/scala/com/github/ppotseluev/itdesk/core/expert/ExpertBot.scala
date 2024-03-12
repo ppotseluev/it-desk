@@ -94,7 +94,8 @@ class ExpertBot[F[_]: Sync](implicit
       start ~> verifyAndAskName by "/start",
       verifyAndAskName ~> nameAdded byAnyInput,
       nameAdded ~> descriptionAdded byAnyInput,
-      descriptionAdded ~> photoAdded byAnyPhoto,
+      descriptionAdded ~> photoAdded byAnyPhoto 0,
+      descriptionAdded ~> descriptionAdded byAnyInput 1,
       photoAdded ~> underReview byAnyInput,
       underReview ~> underReview byAnyInput
     )
