@@ -14,7 +14,8 @@ import sttp.client3.SttpBackend
 
 class AdminBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any], expertDao: ExpertService[F]) {
 
-  private val start = Node[F]("start", reply("Выберите действие"))
+  private val start = Node.start[F]
+  private val selectAction = Node[F]("select_action", reply("Выберите действие"))
   private val addExpert = Node[F]("add_expert", reply("Введите @tg_nickname"))
   private val expertAdded = Node[F](
     "expert_added",
@@ -28,10 +29,11 @@ class AdminBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any], expertDao:
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> addExpert by "Добавить эксперта",
-      addExpert ~> start by ("Отмена", 0),
+      start ~> selectAction by "/start",
+      selectAction ~> addExpert by "Добавить эксперта",
+      addExpert ~> selectAction by ("Отмена", 0),
       addExpert ~> expertAdded byAnyInput 1,
-      expertAdded ~> start by "Ok"
+      expertAdded ~> selectAction by "Ok"
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(

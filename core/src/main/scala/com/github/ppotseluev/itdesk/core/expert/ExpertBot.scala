@@ -24,7 +24,7 @@ class ExpertBot[F[_]: Sync](implicit
     reply[F]("Приветствуем тебя на нашей платформе! Пожалуйста, заполни данные о себе") >>
       reply[F]("Как тебя зовут? Введи в формате Имя Фамилия")
 
-  private val startExpertScript: BotScript[F, Unit] =
+  private val checkExpertScript: BotScript[F, Unit] =
     for {
       time <- getTime
       ctx <- getContext
@@ -48,7 +48,8 @@ class ExpertBot[F[_]: Sync](implicit
   private def saveName(input: String): BotScript[F, Unit] =
     reply("user-save-name-call-stub") //TODO
 
-  private val start = Node[F]("start", startExpertScript)
+  private val start = Node.start[F]
+  private val checkExpert = Node[F]("check", checkExpertScript)
   private val enterName = Node[F](
     "enter_name",
     (getInput[F] >>= saveName) >>
@@ -61,7 +62,8 @@ class ExpertBot[F[_]: Sync](implicit
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> enterName byAnyInput,
+      start ~> checkExpert by "/start",
+      checkExpert ~> enterName byAnyInput,
       enterName ~> underReview byAnyInput,
       underReview ~> underReview byAnyInput //todo ?
     )
