@@ -1,7 +1,8 @@
 package com.github.ppotseluev.itdesk.bots.core.scenario
 
 import cats.implicits._
-import com.github.ppotseluev.itdesk.bots.core.BotDsl.{BotScript, doNothing}
+import com.github.ppotseluev.itdesk.bots.core.BotDsl.BotScript
+import com.github.ppotseluev.itdesk.bots.core.BotDsl.doNothing
 import com.github.ppotseluev.itdesk.bots.core._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import scalax.collection.GraphEdge.DiEdge

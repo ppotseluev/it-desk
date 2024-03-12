@@ -1,12 +1,14 @@
 package com.github.ppotseluev.itdesk.api.telegram
 
-import cats.Monad
+import cats.effect.Sync
 import cats.effect.kernel.Async
 import cats.implicits._
 import com.github.ppotseluev.itdesk.api.BotBundle
 import com.github.ppotseluev.itdesk.bots.Context
 import com.github.ppotseluev.itdesk.bots.TgUser
+import com.github.ppotseluev.itdesk.bots.core.BotError
 import com.github.ppotseluev.itdesk.bots.runtime.BotInterpreter
+import com.typesafe.scalalogging.LazyLogging
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.ConfiguredJsonCodec
@@ -20,7 +22,7 @@ import sttp.tapir.header
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.stringBody
 
-object TelegramWebhook {
+object TelegramWebhook extends LazyLogging {
   implicit private val circeConfig: Configuration = Configuration.default.withSnakeCaseMemberNames
 
   @ConfiguredJsonCodec
@@ -69,7 +71,7 @@ object TelegramWebhook {
       .errorOut(stringBody)
       .securityIn(auth.apiKey(header[WebhookSecret]("X-Telegram-Bot-Api-Secret-Token")))
 
-  class Handler[F[_]: Monad](
+  class Handler[F[_]: Sync](
       botInterpreter: Context => BotInterpreter[F],
       bots: Map[WebhookSecret, BotBundle[F]]
   ) {
@@ -86,6 +88,7 @@ object TelegramWebhook {
           val shouldReact = bot.chatId.forall(_ == chatId)
           if (shouldReact) {
             val ctx = Context(
+              botToken = bot.token,
               botId = bot.botType.id,
               chatId = chatId,
               input = input,
@@ -94,7 +97,10 @@ object TelegramWebhook {
                 username = user.username.getOrElse("UNDEFINED_USERNAME")
               )
             )
-            bot.logic(input).foldMap(botInterpreter(ctx)).map(_.asRight)
+            val f = bot.logic(input).foldMap(botInterpreter(ctx))
+            f.recoverWith { case e: BotError =>
+              Sync[F].delay(logger.warn("Bot execution exception", e))
+            }.map(_.asRight)
           } else {
             skip
           }

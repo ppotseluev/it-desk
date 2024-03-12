@@ -66,8 +66,7 @@ class Factory[F[_]: Async: Parallel] {
   implicit def botInterpreter(implicit chatService: ChatService[F]) =
     new BotInterpreterImpl(
       botStateDao,
-      chatService,
-      id => config.botWithId(id).token
+      chatService
     )(_)
 
   lazy val botStateDao: BotStateDao[F] = {

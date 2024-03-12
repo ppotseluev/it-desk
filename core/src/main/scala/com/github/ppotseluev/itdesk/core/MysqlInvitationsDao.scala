@@ -7,7 +7,6 @@ import com.github.ppotseluev.itdesk.core.model.Role
 import doobie.Transactor
 import doobie.implicits._
 import doobie.implicits.javasql._
-import doobie.util.update.Update
 import java.sql.Timestamp
 
 class MysqlInvitationsDao[F[_]](implicit

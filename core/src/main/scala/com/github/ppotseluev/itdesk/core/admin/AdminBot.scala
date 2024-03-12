@@ -40,7 +40,7 @@ class AdminBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any], expertDao:
     graph = graph,
     startFrom = start.id,
     globalCommands = Map(
-      "/find_experts" -> reply("Not implemented yet. Stay tuned!"),
+      "/find_experts" -> reply("Not implemented yet. Stay tuned!")
     )
   )
 

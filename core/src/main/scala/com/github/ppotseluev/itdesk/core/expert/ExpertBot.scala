@@ -9,7 +9,6 @@ import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.BotError.AccessDenied
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
-
 import java.time.Instant
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
