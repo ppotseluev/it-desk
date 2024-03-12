@@ -115,7 +115,7 @@ class ExpertBot[F[_]: Sync](implicit
     graph = graph,
     startFrom = start.id,
     globalCommands = Map(
-      "/show_experts" -> showExperts
+      "/show_experts" -> showExperts //TODO move this to AdminBot after fixing the issues with photos
     )
   )
 
