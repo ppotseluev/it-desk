@@ -20,7 +20,7 @@ class AdminBot[F[_]: Sync](implicit
 
   private val start = Node.start[F]
   private val selectAction = Node[F]("select_action", reply("Выберите действие"))
-  private val askUsername = Node[F]("ask_username", reply("Введите @tg_nickname"))
+  private val askUsername = Node[F]("ask_username", reply("Введите @tg_username"))
   private val expertAdded = Node[F](
     "expert_added",
     getInput[F].flatMap { tgUsername =>
