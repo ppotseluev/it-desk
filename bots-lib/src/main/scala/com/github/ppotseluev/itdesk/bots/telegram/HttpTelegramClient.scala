@@ -74,7 +74,7 @@ class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
 
   override def getFile(botToken: String, fileId: PhotoUrl): F[FileInfo] =
     basicRequest
-      .get(uri"$telegramUrl/bot$botToken/getFile")
+      .get(uri"$telegramUrl/bot$botToken/getFile?file_id=$fileId")
       .response(asJson[FileInfo])
       .send(sttpBackend)
       .getBodyOrFail()
