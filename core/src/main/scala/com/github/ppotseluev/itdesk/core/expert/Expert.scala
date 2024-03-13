@@ -15,7 +15,7 @@ case class Expert(
 object Expert {
   implicit val show: Show[Expert] = Show.show { expert =>
     s"""
-      |${expert.info.name.getOrElse("")}\n\n
+      |${expert.info.name.getOrElse("")}\n
       |${expert.info.description.getOrElse("")}
       |""".stripMargin
   }
