@@ -24,14 +24,14 @@ class AdminBot[F[_]: Sync](implicit
   private val expertAdded = Node[F](
     "expert_added",
     getInput[F].flatMap { tgUsername =>
-      saveExpert(tgUsername) >> reply(
-        s"Успешно, теперь у @$tgUsername есть доступ к @it_desk_expert_bot"
+      val username = tgUsername.stripPrefix("@")
+      saveExpert(username) >> reply(
+        s"Успешно, теперь у @$username есть доступ к @it_desk_expert_bot"
       )
     }
   )
 
-  private def saveExpert(tgUsername: String): BotScript[F, Unit] = execute {
-    val username = tgUsername.stripPrefix("@")
+  private def saveExpert(username: String): BotScript[F, Unit] = execute {
     expertService.inviteExpert(username).void
   }
 
