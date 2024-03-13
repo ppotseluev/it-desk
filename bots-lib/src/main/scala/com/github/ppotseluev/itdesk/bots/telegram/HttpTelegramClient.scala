@@ -3,8 +3,10 @@ package com.github.ppotseluev.itdesk.bots.telegram
 import cats.MonadError
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.{FileInfo, MessageSource, TgResponse}
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.FileInfo
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource.PhotoUrl
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.TgResponse
 import io.circe.Json
 import io.circe.Printer
 import io.circe.syntax._
