@@ -5,6 +5,7 @@ import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.core.Bot
 import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
+import com.github.ppotseluev.itdesk.bots.core.BotDsl.reply
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.core.expert.ExpertService
@@ -19,10 +20,14 @@ class AdminBot[F[_]: Sync](implicit
 
   private val start = Node.start[F]
   private val selectAction = Node[F]("select_action", reply("Выберите действие"))
-  private val addExpert = Node[F]("add_expert", reply("Введите @tg_nickname"))
+  private val askUsername = Node[F]("ask_username", reply("Введите @tg_nickname"))
   private val expertAdded = Node[F](
     "expert_added",
-    (getInput[F] >>= saveExpert) >> reply("Эксперт добавлен")
+    getInput[F].flatMap { tgUsername =>
+      saveExpert(tgUsername) >> reply(
+        s"Успешно, теперь у @$tgUsername есть доступ к @it_desk_expert_bot"
+      )
+    }
   )
 
   private def saveExpert(tgUsername: String): BotScript[F, Unit] = execute {
@@ -33,9 +38,9 @@ class AdminBot[F[_]: Sync](implicit
   private val graph: BotGraph[F] =
     Graph(
       start ~> selectAction by "/start",
-      selectAction ~> addExpert by "Добавить эксперта",
-      addExpert ~> selectAction by ("Отмена", 0),
-      addExpert ~> expertAdded byAnyInput 1,
+      selectAction ~> askUsername by "Выдать доступ эксперту",
+      askUsername ~> selectAction by ("Отмена", 0),
+      askUsername ~> expertAdded byAnyInput 1,
       expertAdded ~> selectAction by "Ok"
     )
 

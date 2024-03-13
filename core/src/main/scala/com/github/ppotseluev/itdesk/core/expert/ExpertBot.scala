@@ -84,7 +84,7 @@ class ExpertBot[F[_]: Sync](implicit
   private val nameAdded = Node[F](
     "enter_name",
     updateInfo(name) >>
-      reply("Ок. Теперь расскажите, пожалуйста, о себе. Это описание будет видно студентам")
+      reply("Ок. Теперь расскажи, пожалуйста, о себе. Это описание будет видно студентам")
   )
   private val descriptionAdded = Node[F](
     "enter_description",
@@ -96,12 +96,12 @@ class ExpertBot[F[_]: Sync](implicit
     (getContext[F] >>= getPhoto).flatMap { file =>
       updateInfo(photo(file))
     } >> reply(
-      "Спасибо, что заполнили анкету! Мы уже проверяем данные и скоро активируем ваш профиль"
+      "Благодарим за заполнение анкеты! Мы уже проверяем данные и скоро активируем твой профиль"
     )
   )
   private val underReview = Node[F](
     "under_review",
-    reply("Пожалуйста, подождите, идет проверка данных")
+    reply("Мы проверяем данные, всё уже почти готово ⏳")
   )
 
   private val graph: BotGraph[F] =
