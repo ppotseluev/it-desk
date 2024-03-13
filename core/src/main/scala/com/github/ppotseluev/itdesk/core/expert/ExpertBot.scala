@@ -9,6 +9,7 @@ import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.BotError.AccessDenied
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient
 import java.time.Instant
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
@@ -16,7 +17,8 @@ import sttp.client3.SttpBackend
 
 class ExpertBot[F[_]: Sync](implicit
     sttpBackend: SttpBackend[F, Any],
-    expertDao: ExpertService[F]
+    expertService: ExpertService[F],
+    tg: TelegramClient[F]
 ) {
   private val getTime: BotScript[F, Instant] = execute(Sync[F].delay(Instant.now))
   private val greet: BotScript[F, Unit] =
@@ -35,36 +37,82 @@ class ExpertBot[F[_]: Sync](implicit
 
   private def hasValidInvite(tgUsername: String, nowTime: Instant): BotScript[F, Boolean] =
     execute {
-      expertDao.getInvite(tgUsername).map {
+      expertService.getInvite(tgUsername).map {
         _.exists { invite =>
           invite.validUntil.isAfter(nowTime)
         }
       }
     }
 
-  private def registerUser(ctx: Context): BotScript[F, Unit] =
-    reply("user-register-call-stub") //TODO
-  private def saveName(input: String): BotScript[F, Unit] =
-    reply("user-save-name-call-stub") //TODO
+  private def registerUser(ctx: Context): BotScript[F, Unit] = execute {
+    expertService.register(ctx.user.id)
+  }
+
+  private def updateInfo(f: (Context, Expert.Info) => Expert.Info): BotScript[F, Unit] =
+    getContext[F].flatMap { ctx =>
+      execute {
+        expertService.updateInfo(
+          tgUserId = ctx.user.id,
+          info = f(ctx, Expert.Info.empty)
+        )
+      }
+    }
+
+  private def name(ctx: Context, info: Expert.Info): Expert.Info =
+    info.copy(name = ctx.inputText.some)
+
+  private def description(ctx: Context, info: Expert.Info): Expert.Info =
+    info.copy(description = ctx.inputText.some)
+
+  private def photo(photo: Option[Array[Byte]])(ctx: Context, info: Expert.Info): Expert.Info = {
+    info.copy(photo = photo)
+  }
+
+  private def getPhoto(ctx: Context): BotScript[F, Option[Array[Byte]]] = execute {
+    ctx.inputPhoto.flatMap(_.maxByOption(_.width)) match {
+      case Some(photo) =>
+        for {
+          fileInfo <- tg.getFile(ctx.botToken, photo.fileId)
+          file <- tg.downloadFile(ctx.botToken, fileInfo.filePath)
+        } yield file.some
+      case None => none[Array[Byte]].pure[F]
+    }
+  }
 
   private val start = Node.start[F]
-  private val checkExpert = Node[F]("check", checkExpertScript)
-  private val enterName = Node[F](
+  private val verifyAndAskName = Node[F]("check", checkExpertScript)
+  private val nameAdded = Node[F](
     "enter_name",
-    (getInput[F] >>= saveName) >>
-      reply("Спасибо, что заполнили анкету! Мы уже проверяем данные и скоро активируем ваш профиль")
+    updateInfo(name) >>
+      reply("Ок. Теперь расскажи, пожалуйста, о себе. Это описание будет видно студентам")
+  )
+  private val descriptionAdded = Node[F](
+    "enter_description",
+    updateInfo(description) >>
+      reply("Теперь загрузите фото")
+  )
+  private val photoAdded = Node[F](
+    "add_photo",
+    (getContext[F] >>= getPhoto).flatMap { file =>
+      updateInfo(photo(file))
+    } >> reply(
+      "Благодарим за заполнение анкеты! Мы уже проверяем данные и скоро активируем твой профиль"
+    )
   )
   private val underReview = Node[F](
     "under_review",
-    reply("Пожалуйста, подождите, идет проверка данных")
+    reply("Мы проверяем данные, всё уже почти готово ⏳")
   )
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> checkExpert by "/start",
-      checkExpert ~> enterName byAnyInput,
-      enterName ~> underReview byAnyInput,
-      underReview ~> underReview byAnyInput //todo ?
+      start ~> verifyAndAskName by "/start",
+      verifyAndAskName ~> nameAdded byAnyInput,
+      nameAdded ~> descriptionAdded byAnyInput,
+      descriptionAdded ~> photoAdded byAnyPhoto 0,
+      descriptionAdded ~> descriptionAdded byAnyInput 1,
+      photoAdded ~> underReview byAnyInput,
+      underReview ~> underReview byAnyInput
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
@@ -80,6 +128,10 @@ class ExpertBot[F[_]: Sync](implicit
 }
 
 object ExpertBot {
-  def apply[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any], expertDao: ExpertService[F]) =
+  def apply[F[_]: Sync](implicit
+      sttpBackend: SttpBackend[F, Any],
+      expertDao: ExpertService[F],
+      tg: TelegramClient[F]
+  ) =
     new ExpertBot[F]
 }

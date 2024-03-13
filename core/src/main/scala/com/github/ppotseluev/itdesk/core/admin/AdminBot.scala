@@ -5,6 +5,7 @@ import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.core.Bot
 import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
+import com.github.ppotseluev.itdesk.bots.core.BotDsl.reply
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.core.expert.ExpertService
@@ -12,35 +13,53 @@ import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
 import sttp.client3.SttpBackend
 
-class AdminBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any], expertDao: ExpertService[F]) {
+class AdminBot[F[_]: Sync](implicit
+    sttpBackend: SttpBackend[F, Any],
+    expertService: ExpertService[F]
+) {
 
   private val start = Node.start[F]
   private val selectAction = Node[F]("select_action", reply("Выберите действие"))
-  private val addExpert = Node[F]("add_expert", reply("Введите @tg_nickname"))
+  private val askUsername = Node[F]("ask_username", reply("Введите @tg_username"))
   private val expertAdded = Node[F](
     "expert_added",
-    (getInput[F] >>= saveExpert) >> reply("Эксперт добавлен")
+    getInput[F].flatMap { tgUsername =>
+      val username = tgUsername.stripPrefix("@")
+      saveExpert(username) >> reply(
+        s"Успешно, теперь у @$username есть доступ к @it_desk_expert_bot"
+      )
+    }
   )
 
-  private def saveExpert(tgUsername: String): BotScript[F, Unit] = execute {
-    val username = tgUsername.stripPrefix("@")
-    expertDao.inviteExpert(username).void
+  private def saveExpert(username: String): BotScript[F, Unit] = execute {
+    expertService.inviteExpert(username).void
   }
 
   private val graph: BotGraph[F] =
     Graph(
       start ~> selectAction by "/start",
-      selectAction ~> addExpert by "Добавить эксперта",
-      addExpert ~> selectAction by ("Отмена", 0),
-      addExpert ~> expertAdded byAnyInput 1,
+      selectAction ~> askUsername by "Выдать доступ эксперту",
+      askUsername ~> selectAction by ("Отмена", 0),
+      askUsername ~> expertAdded byAnyInput 1,
       expertAdded ~> selectAction by "Ok"
     )
+
+  private def showExperts: BotScript[F, Unit] = execute {
+    expertService.getAllExperts
+  }.flatMap { experts =>
+    experts.headOption match { //TODO
+      case Some(expert) =>
+        val txt = expert.show
+        reply(txt, expert.info.photo.map(_.asRight))
+      case None => reply("No experts found")
+    }
+  }
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
     graph = graph,
     startFrom = start.id,
     globalCommands = Map(
-      "/find_experts" -> reply("Not implemented yet. Stay tuned!")
+      "/show_experts" -> showExperts
     )
   )
 

@@ -1,4 +1,4 @@
-package com.github.ppotseluev.itdesk.core.model
+package com.github.ppotseluev.itdesk.core.user
 
 import enumeratum.values.IntEnum
 import enumeratum.values.IntEnumEntry

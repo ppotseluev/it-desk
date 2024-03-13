@@ -1,5 +1,6 @@
-package com.github.ppotseluev.itdesk.core.model
+package com.github.ppotseluev.itdesk.core
 
+import com.github.ppotseluev.itdesk.core.user.Role
 import java.time.Instant
 
 case class Invite(

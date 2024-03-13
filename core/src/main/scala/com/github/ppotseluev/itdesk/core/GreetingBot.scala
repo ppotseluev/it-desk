@@ -36,12 +36,8 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
     basicRequest
       .get(uri"https://blockchain.info/tobtc?currency=USD&value=1")
       .send(sttpBackend)
-      .checkStatusCode()
-      .map(_.body)
-      .map {
-        case Left(value)  => value
-        case Right(value) => (1.0 / value.toDouble).toString
-      }
+      .getBodyOrFail()
+      .map(value => (1.0 / value.toDouble).toString)
   }
 
   private val showTime = Node(
@@ -51,7 +47,7 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
 
   private val getBtcPriceNode = Node(
     "get_btc_price",
-    getBtcPrice.flatMap(reply)
+    getBtcPrice.flatMap(reply(_))
   )
 
   private val graph: BotGraph[F] =
@@ -72,7 +68,7 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
     graph = graph,
     startFrom = start.id,
     globalCommands = Map(
-      "/time" -> getTime.map(_.toString).flatMap(reply[F]),
+      "/time" -> getTime.map(_.toString).flatMap(reply[F](_)),
       "/help" -> reply("Here should be some help message")
     )
   )

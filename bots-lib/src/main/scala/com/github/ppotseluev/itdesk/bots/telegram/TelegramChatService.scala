@@ -9,10 +9,10 @@ import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.ReplyMarkup
 
 class TelegramChatService[F[_]](telegramClient: TelegramClient[F]) extends ChatService[F] {
 
-  override def send(botToken: String)(chatId: ChatId)(payload: Message.Payload): F[Unit] = {
-    val keyboard = buildKeyboard(payload.availableCommands)
-    val message = TelegramClient.MessageSource(chatId, payload.text, Some(keyboard))
-    telegramClient.send(botToken)(message)
+  override def send(botToken: String)(chatId: ChatId)(message: Message): F[Unit] = {
+    val keyboard = buildKeyboard(message.availableCommands)
+    val msg = TelegramClient.MessageSource(chatId, message.payload.text, Some(keyboard))
+    telegramClient.send(botToken)(msg, message.payload.photo)
   }
 
   private def buildKeyboard(availableCommands: Seq[BotCommand]): ReplyMarkup =

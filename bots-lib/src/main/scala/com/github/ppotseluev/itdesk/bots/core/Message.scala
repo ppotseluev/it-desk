@@ -1,9 +1,17 @@
 package com.github.ppotseluev.itdesk.bots.core
 
-case class Message(chatId: ChatId, payload: Message.Payload)
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource.PhotoUrl
+
+case class Message(
+    payload: Message.Payload,
+    availableCommands: Seq[BotCommand]
+)
 
 object Message {
 
-  case class Payload(text: String, availableCommands: Seq[BotCommand])
+  case class Payload(
+      text: String,
+      photo: Option[Either[PhotoUrl, Array[Byte]]]
+  )
 
 }

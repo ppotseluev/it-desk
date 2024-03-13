@@ -1,5 +1,6 @@
 package com.github.ppotseluev.itdesk.bots.core
 
+import com.github.ppotseluev.itdesk.bots.Context
 import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
@@ -12,10 +13,10 @@ class Bot[F[_]](
     fallbackPolicy: FallbackPolicy
 ) extends BotLogic[F] {
 
-  override def apply(input: String): BotScript[F, Unit] = {
+  override def apply(ctx: Context): BotScript[F, Unit] = {
     for {
       currentStateId <- getCurrentState.map(_.getOrElse(scenario.startFrom))
-      _ <- scenario.transit(currentStateId, input) match {
+      _ <- scenario.transit(currentStateId, ctx) match {
         case Some(newState) => process(newState)
         case None =>
           fallbackPolicy match {

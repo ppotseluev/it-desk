@@ -1,7 +1,6 @@
 package com.github.ppotseluev.itdesk.core
 
-import com.github.ppotseluev.itdesk.core.model.Invite
-import com.github.ppotseluev.itdesk.core.model.Role
+import com.github.ppotseluev.itdesk.core.user.Role
 
 trait InvitationsDao[F[_]] {
   def upsertInvite(invite: Invite): F[Unit]
