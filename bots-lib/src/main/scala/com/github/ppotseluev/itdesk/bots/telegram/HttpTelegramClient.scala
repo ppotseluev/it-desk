@@ -3,8 +3,7 @@ package com.github.ppotseluev.itdesk.bots.telegram
 import cats.MonadError
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.FileInfo
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.{FileInfo, MessageSource, TgResponse}
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource.PhotoUrl
 import io.circe.Json
 import io.circe.Printer
@@ -75,9 +74,10 @@ class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
   override def getFile(botToken: String, fileId: PhotoUrl): F[FileInfo] =
     basicRequest
       .get(uri"$telegramUrl/bot$botToken/getFile?file_id=$fileId")
-      .response(asJson[FileInfo])
+      .response(asJson[TgResponse[FileInfo]])
       .send(sttpBackend)
       .getBodyOrFail()
+      .map(_.result)
 
   override def downloadFile(botToken: PhotoUrl, filePath: PhotoUrl): F[Array[Byte]] =
     basicRequest
@@ -88,8 +88,8 @@ class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
 }
 
 object HttpTelegramClient {
-  case class HttpCodeException(code: Int, message: String)
-      extends RuntimeException(s"Bad status code: $code, $message")
+  case class HttpException(code: Int, message: String)
+      extends RuntimeException(s"Status code: $code, $message")
 
   implicit class RichResponse[F[_], T](val responseF: F[Response[T]]) extends AnyVal {
 
@@ -101,7 +101,7 @@ object HttpTelegramClient {
           case Right(body) if isSuccess(response.code) =>
             body.pure[F]
           case _ =>
-            HttpCodeException(
+            HttpException(
               response.code.code,
               response.body.left.toOption.map(_.toString).getOrElse("")
             ).raiseError[F, A]

@@ -20,6 +20,14 @@ trait TelegramClient[F[_]] {
 }
 
 object TelegramClient {
+  case class TgResponse[T](
+      ok: Boolean,
+      result: T
+  )
+  object TgResponse {
+    implicit def codec[T: Codec]: Codec[TgResponse[T]] = deriveCodec
+  }
+
   implicit private val circeConfig: Configuration = Configuration.default.withSnakeCaseMemberNames
 
   @ConfiguredJsonCodec
