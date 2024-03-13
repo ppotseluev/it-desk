@@ -1,7 +1,8 @@
 package com.github.ppotseluev.itdesk.core.user
 
-import User.UserSource
 import com.github.ppotseluev.itdesk.core.user.UserDao.Filter
+
+import User.UserSource
 
 trait UserDao[F[_]] {
   def upsertUser(user: UserSource): F[Unit]

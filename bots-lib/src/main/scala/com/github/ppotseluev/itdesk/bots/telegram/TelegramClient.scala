@@ -1,5 +1,6 @@
 package com.github.ppotseluev.itdesk.bots.telegram
 
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.FileInfo
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource.PhotoUrl
 import io.circe.Codec
@@ -12,6 +13,10 @@ trait TelegramClient[F[_]] {
       messageSource: MessageSource,
       photo: Option[Either[PhotoUrl, Array[Byte]]]
   ): F[Unit]
+
+  def getFile(botToken: String, fileId: String): F[FileInfo]
+
+  def downloadFile(botToken: String, filePath: String): F[Array[Byte]]
 }
 
 object TelegramClient {
@@ -51,5 +56,13 @@ object TelegramClient {
     type PhotoUrl = String
     implicit val messageSourceCodec: Codec[MessageSource] = deriveCodec
   }
+
+  @ConfiguredJsonCodec
+  case class FileInfo(
+      fileId: String,
+      fileUniqueId: String,
+      fileSize: Long,
+      filePath: String
+  )
 
 }

@@ -3,6 +3,7 @@ package com.github.ppotseluev.itdesk.bots.telegram
 import cats.MonadError
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.FileInfo
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource.PhotoUrl
 import io.circe.Json
@@ -34,7 +35,7 @@ class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
       .header(Header.contentType(MediaType.ApplicationJson))
       .body(json)
       .send(sttpBackend)
-      .checkStatusCode()
+      .getBodyOrFail()
       .void
     photo match {
       case Some(value) =>
@@ -68,8 +69,22 @@ class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
         )
         request.header(Header.contentType(MediaType.ApplicationJson)).body(json)
     }
-    photoRequest.send(sttpBackend).checkStatusCode().void
+    photoRequest.send(sttpBackend).getBodyOrFail().void
   }
+
+  override def getFile(botToken: String, fileId: PhotoUrl): F[FileInfo] =
+    basicRequest
+      .get(uri"$telegramUrl/bot$botToken/getFile")
+      .response(asJson[FileInfo])
+      .send(sttpBackend)
+      .getBodyOrFail()
+
+  override def downloadFile(botToken: PhotoUrl, filePath: PhotoUrl): F[Array[Byte]] =
+    basicRequest
+      .get(uri"$telegramUrl/file/bot$botToken/$filePath")
+      .response(asByteArray)
+      .send(sttpBackend)
+      .getBodyOrFail()
 }
 
 object HttpTelegramClient {
@@ -78,15 +93,19 @@ object HttpTelegramClient {
 
   implicit class RichResponse[F[_], T](val responseF: F[Response[T]]) extends AnyVal {
 
-    def checkStatusCode(
+    def getBodyOrFail[E, A](
         isSuccess: StatusCode => Boolean = _.isSuccess
-    )(implicit F: MonadError[F, Throwable], ev: T <:< Either[String, _]): F[Response[T]] =
+    )(implicit F: MonadError[F, Throwable], ev: T <:< Either[E, A]): F[A] =
       responseF.flatMap { response =>
-        if (isSuccess(response.code))
-          response.pure[F]
-        else
-          HttpCodeException(response.code.code, response.body.left.getOrElse(""))
-            .raiseError[F, Response[T]]
+        ev(response.body) match {
+          case Right(body) if isSuccess(response.code) =>
+            body.pure[F]
+          case _ =>
+            HttpCodeException(
+              response.code.code,
+              response.body.left.toOption.map(_.toString).getOrElse("")
+            ).raiseError[F, A]
+        }
       }
   }
 }

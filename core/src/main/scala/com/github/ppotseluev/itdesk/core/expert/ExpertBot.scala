@@ -9,6 +9,7 @@ import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.BotError.AccessDenied
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient
 import java.time.Instant
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
@@ -16,7 +17,8 @@ import sttp.client3.SttpBackend
 
 class ExpertBot[F[_]: Sync](implicit
     sttpBackend: SttpBackend[F, Any],
-    expertService: ExpertService[F]
+    expertService: ExpertService[F],
+    tg: TelegramClient[F]
 ) {
   private val getTime: BotScript[F, Instant] = execute(Sync[F].delay(Instant.now))
   private val greet: BotScript[F, Unit] =
@@ -62,9 +64,19 @@ class ExpertBot[F[_]: Sync](implicit
   private def description(ctx: Context, info: Expert.Info): Expert.Info =
     info.copy(description = ctx.inputText.some)
 
-  private def photo(ctx: Context, info: Expert.Info): Expert.Info = {
-    val photo = ctx.inputPhoto.flatMap(_.maxByOption(_.width))
-    info.copy(photo = photo.map(_.fileId))
+  private def photo(photo: Option[Array[Byte]])(ctx: Context, info: Expert.Info): Expert.Info = {
+    info.copy(photo = photo)
+  }
+
+  private def getPhoto(ctx: Context): BotScript[F, Option[Array[Byte]]] = execute {
+    ctx.inputPhoto.flatMap(_.maxByOption(_.width)) match {
+      case Some(photo) =>
+        for {
+          fileInfo <- tg.getFile(ctx.botToken, photo.fileId)
+          file <- tg.downloadFile(ctx.botToken, fileInfo.filePath)
+        } yield file.some
+      case None => none[Array[Byte]].pure[F]
+    }
   }
 
   private val start = Node.start[F]
@@ -81,8 +93,11 @@ class ExpertBot[F[_]: Sync](implicit
   )
   private val photoAdded = Node[F](
     "add_photo",
-    updateInfo(photo) >>
-      reply("Спасибо, что заполнили анкету! Мы уже проверяем данные и скоро активируем ваш профиль")
+    (getContext[F] >>= getPhoto).flatMap { file =>
+      updateInfo(photo(file))
+    } >> reply(
+      "Спасибо, что заполнили анкету! Мы уже проверяем данные и скоро активируем ваш профиль"
+    )
   )
   private val underReview = Node[F](
     "under_review",
@@ -100,23 +115,10 @@ class ExpertBot[F[_]: Sync](implicit
       underReview ~> underReview byAnyInput
     )
 
-  private def showExperts: BotScript[F, Unit] = execute {
-    expertService.getAllExperts
-  }.flatMap { experts =>
-    experts.headOption match { //TODO
-      case Some(expert) =>
-        val txt = expert.show
-        reply(txt, expert.info.photo.map(_.asLeft))
-      case None => reply("No experts found")
-    }
-  }
-
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
     graph = graph,
     startFrom = start.id,
-    globalCommands = Map(
-      "/show_experts" -> showExperts //TODO move this to AdminBot after fixing the issues with photos
-    )
+    globalCommands = Map.empty
   )
 
   val logic = new Bot(
@@ -126,6 +128,10 @@ class ExpertBot[F[_]: Sync](implicit
 }
 
 object ExpertBot {
-  def apply[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any], expertDao: ExpertService[F]) =
+  def apply[F[_]: Sync](implicit
+      sttpBackend: SttpBackend[F, Any],
+      expertDao: ExpertService[F],
+      tg: TelegramClient[F]
+  ) =
     new ExpertBot[F]
 }

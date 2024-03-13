@@ -24,7 +24,7 @@ CREATE TABLE experts(
     `name`            VARCHAR(100)      DEFAULT NULL,
     `description`     TEXT              DEFAULT NULL,
     `status`          TINYINT           NOT NULL,
-    `photo`           VARCHAR(255)      DEFAULT NULL,
+    `photo`           MEDIUMBLOB        DEFAULT NULL,  -- TODO check size when save file
     PRIMARY KEY (`user_id`),
     CONSTRAINT FK_UserId FOREIGN KEY (`user_id`) REFERENCES users(`id`)
 );

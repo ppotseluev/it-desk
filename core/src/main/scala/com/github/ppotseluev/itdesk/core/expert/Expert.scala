@@ -23,7 +23,7 @@ object Expert {
   case class Info(
       name: Option[String],
       description: Option[String],
-      photo: Option[String]
+      photo: Option[Array[Byte]]
   )
   object Info {
     val empty: Info = Info(None, None, None)

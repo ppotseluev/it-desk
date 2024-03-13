@@ -43,7 +43,7 @@ object MysqlExpertDao {
       name: Option[String],
       description: Option[String],
       status: Expert.Status,
-      photo: Option[String]
+      photo: Option[Array[Byte]]
   ) {
     def expert(user: User): Expert = Expert(
       user = user,

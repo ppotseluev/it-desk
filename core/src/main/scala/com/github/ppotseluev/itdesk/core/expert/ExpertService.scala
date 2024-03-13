@@ -1,6 +1,5 @@
 package com.github.ppotseluev.itdesk.core.expert
 
-import cats.Traverse
 import cats.effect.kernel.Sync
 import cats.implicits._
 import com.github.ppotseluev.itdesk.core
@@ -11,7 +10,6 @@ import com.github.ppotseluev.itdesk.core.user.User
 import com.github.ppotseluev.itdesk.core.user.User.UserSource
 import com.github.ppotseluev.itdesk.core.user.UserDao
 import com.github.ppotseluev.itdesk.core.user.UserDao.Filter
-
 import java.time.Instant
 import scala.concurrent.duration._
 

@@ -36,12 +36,8 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
     basicRequest
       .get(uri"https://blockchain.info/tobtc?currency=USD&value=1")
       .send(sttpBackend)
-      .checkStatusCode()
-      .map(_.body)
-      .map {
-        case Left(value)  => value
-        case Right(value) => (1.0 / value.toDouble).toString
-      }
+      .getBodyOrFail()
+      .map(value => (1.0 / value.toDouble).toString)
   }
 
   private val showTime = Node(
