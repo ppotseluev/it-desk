@@ -34,7 +34,7 @@ object Expert {
   object Status extends IntEnum[Status] {
 
     /**
-     * Expert is registerd in the platform but his profile is not visible for the students
+     * Expert is registered in the platform but his profile is not visible for the students
      */
     case object New extends Status(0)
 
