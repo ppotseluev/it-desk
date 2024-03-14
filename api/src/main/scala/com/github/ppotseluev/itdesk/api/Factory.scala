@@ -88,7 +88,7 @@ class Factory[F[_]: Async: Parallel] {
 
   private implicit lazy val transactor: Transactor[F] = {
     import config.dbConfig._
-    val url = s"jdbc:postgres://$host:$port/$database"
+    val url = s"jdbc:postgresql://$host:$port/$database"
     Transactor
       .fromDriverManager[F]
       .apply(
