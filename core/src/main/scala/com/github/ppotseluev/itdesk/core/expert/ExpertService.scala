@@ -58,7 +58,8 @@ object ExpertService {
           updatedInfo = Expert.Info(
             name = newInfo.name.orElse(info.flatMap(_.name)),
             description = newInfo.description.orElse(info.flatMap(_.description)),
-            photo = newInfo.photo.orElse(info.flatMap(_.photo))
+            photo = newInfo.photo.orElse(info.flatMap(_.photo)),
+            skills = info.toSet.flatMap((i: Expert.Info) => i.skills) ++ newInfo.skills
           )
           updatedExpert = expert match {
             case Some(value) => value.copy(info = updatedInfo)
@@ -66,7 +67,7 @@ object ExpertService {
               Expert(
                 user = user,
                 info = updatedInfo,
-                status = Expert.Status.New
+                status = ExpertStatus.New
               )
           }
           _ <- expertDao.upsertExpert(updatedExpert)

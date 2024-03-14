@@ -8,7 +8,7 @@ import doobie.implicits._
 
 import DoobieSerialization._
 
-class MysqlInvitationsDao[F[_]](implicit
+class PgInvitationsDao[F[_]](implicit
     transactor: Transactor[F],
     F: MonadCancelThrow[F]
 ) extends InvitationsDao[F] {
@@ -17,7 +17,7 @@ class MysqlInvitationsDao[F[_]](implicit
     sql"""
          INSERT INTO invitations (tg_username, role, valid_until)
            VALUES (${invite.tgUsername}, ${invite.role}, ${invite.validUntil})
-           ON DUPLICATE KEY UPDATE
+           ON CONFLICT (tg_username, role) DO UPDATE SET
               valid_until = ${invite.validUntil}
        """.update.run.transact(transactor).void
   }

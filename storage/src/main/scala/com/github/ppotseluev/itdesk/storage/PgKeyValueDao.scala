@@ -11,20 +11,20 @@ import doobie.util.transactor.Transactor
 import io.circe.parser
 import scala.reflect.runtime.universe.TypeTag
 
-class MySqlKeyValueDao[F[_], K, V: TypeTag](tableName: String, transactor: Transactor[F])(implicit
+class PgKeyValueDao[F[_], K, V: TypeTag](tableName: String, transactor: Transactor[F])(implicit
     keySchema: Schema.String[K],
     valueSchema: Schema[V],
     F: MonadCancelThrow[F]
 ) extends KeyValueDao[F, K, V] {
 
-  import MySqlKeyValueDao._
+  import PgKeyValueDao._
 
   private def putSql(key: K, value: V): doobie.Update0 =
     (Fragment.const(s"INSERT INTO $tableName (id, value)") ++
       fr"""|VALUES (
            |  $key,
            |  $value
-           |) ON DUPLICATE KEY UPDATE
+           |) ON CONFLICT (id) DO UPDATE SET
            |value = $value;
         """.stripMargin).update
 
@@ -39,7 +39,7 @@ class MySqlKeyValueDao[F[_], K, V: TypeTag](tableName: String, transactor: Trans
       .transact(transactor)
 }
 
-object MySqlKeyValueDao {
+object PgKeyValueDao {
   private implicit def derivePut[T](implicit schema: Schema[T]): Put[T] = schema match {
     case Schema.Json(codec)   => Put[String].contramap(codec.apply(_).noSpaces)
     case Schema.String(codec) => Put[String].contramap(codec.write)

@@ -3,12 +3,12 @@ package com.github.ppotseluev.itdesk.core.expert
 import cats.effect.MonadCancelThrow
 import cats.implicits._
 import com.github.ppotseluev.itdesk.core.DoobieSerialization._
-import com.github.ppotseluev.itdesk.core.expert.MysqlExpertDao.ExpertRecord
+import com.github.ppotseluev.itdesk.core.expert.PgExpertDao.ExpertRecord
 import com.github.ppotseluev.itdesk.core.user.User
 import doobie.Transactor
 import doobie.implicits._
 
-class MysqlExpertDao[F[_]](implicit
+class PgExpertDao[F[_]](implicit
     transactor: Transactor[F],
     F: MonadCancelThrow[F]
 ) extends ExpertDao[F] {
@@ -18,7 +18,7 @@ class MysqlExpertDao[F[_]](implicit
     sql"""
              INSERT INTO experts (user_id, name, description, status)
                VALUES (${expert.user.id}, ${info.name}, ${info.description}, ${expert.status})
-               ON DUPLICATE KEY UPDATE
+               ON CONFLICT (user_id) DO UPDATE SET
                   name = ${info.name},
                   description = ${info.description},
                   status = ${expert.status},
@@ -37,17 +37,23 @@ class MysqlExpertDao[F[_]](implicit
       .transact(transactor)
 }
 
-object MysqlExpertDao {
+object PgExpertDao {
   case class ExpertRecord(
       userId: Long,
       name: Option[String],
       description: Option[String],
-      status: Expert.Status,
+      status: ExpertStatus,
       photo: Option[Array[Byte]]
+//      skills: Array[Skill]
   ) {
     def expert(user: User): Expert = Expert(
       user = user,
-      info = Expert.Info(name = name, description = description, photo = photo),
+      info = Expert.Info(
+        name = name,
+        description = description,
+        photo = photo,
+        skills = Set.empty //skills.toSet
+      ),
       status = status
     )
   }

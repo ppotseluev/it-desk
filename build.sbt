@@ -88,19 +88,20 @@ lazy val `storage` = project
     settings,
     libraryDependencies ++= Seq(
       Dependency.doobieCore,
-      Dependency.mysqlConnector
+      Dependency.pgConnector
     )
   )
   .dependsOn(
     `serialization`
   )
 
-lazy val `serialization` = project.settings(
-  name := "serialization",
-  settings,
-  libraryDependencies ++= Seq(
-  ) ++ Dependency.circe.all
-)
+lazy val `serialization` = project
+  .settings(
+    name := "serialization",
+    settings,
+    libraryDependencies ++= Seq(
+    ) ++ Dependency.circe.all
+  )
 
 lazy val `core` = project
   .settings(
