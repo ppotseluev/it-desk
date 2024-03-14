@@ -88,9 +88,16 @@ class Factory[F[_]: Async: Parallel] {
 
   private implicit lazy val transactor: Transactor[F] = {
     import config.dbConfig._
+    val url = s"jdbc:postgres://$host:$port/$database"
     Transactor
       .fromDriverManager[F]
-      .apply("org.postgresql.Driver", url, None)
+      .apply(
+        "org.postgresql.Driver",
+        url,
+        user,
+        password,
+        None
+      )
   }
 
   def withSttp[C](

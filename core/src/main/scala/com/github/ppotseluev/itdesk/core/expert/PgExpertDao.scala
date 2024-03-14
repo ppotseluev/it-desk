@@ -52,7 +52,7 @@ object PgExpertDao {
         name = name,
         description = description,
         photo = photo,
-        skills = Set.empty //skills.toSet
+        skills = Set.empty //TODO skills.toSet
       ),
       status = status
     )
