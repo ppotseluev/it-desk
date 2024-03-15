@@ -127,6 +127,12 @@ class ExpertBot[F[_]: Sync](implicit
       }
     } yield updatedExpert.info.skills.toSet.flatten
 
+  private val finishCommand = BotCommand.Callback(
+    text = "Отправить",
+    callbackData = "."
+  )
+  private val initialSkillsCheckbox = buildSkillsKeyboard(selectedSkills = Set.empty)
+
   private def buildSkillsKeyboard(
       selectedSkills: Set[Skill]
   ): List[BotCommand.Callback] =
@@ -141,7 +147,7 @@ class ExpertBot[F[_]: Sync](implicit
           text = s"🔲${skill.name}",
           callbackData = s"+${skill.value}"
         )
-    }.toList
+    }.toList :+ finishCommand
 
   private def editSkillsKeyboard(newKeyboard: List[BotCommand.Callback]): BotScript[F, Unit] =
     for {
@@ -181,9 +187,6 @@ class ExpertBot[F[_]: Sync](implicit
     reply("Спасибо, мы проверяем данные, всё уже почти готово ⏳")
   )
 
-  private val initialSkillsCheckbox = buildSkillsKeyboard(selectedSkills = Set.empty)
-  private val finishCommand = BotCommand.Callback("Готово!", ".")
-
   private val graph: BotGraph[F] =
     Graph(
       start ~> verifyAndAskName addLabel equalTo("/start"),
@@ -191,7 +194,7 @@ class ExpertBot[F[_]: Sync](implicit
       nameAdded ~> descriptionAdded addLabel AnyInput,
       descriptionAdded ~> photoAdded addLabel (HasPhoto, 0),
       descriptionAdded ~> descriptionAdded addLabel (AnyInput, 1),
-      photoAdded ~> addSkill addLabel OneOf(initialSkillsCheckbox :+ finishCommand),
+      photoAdded ~> addSkill addLabel OneOf(initialSkillsCheckbox),
       addSkill ~> underReview addLabel (EqualTo(finishCommand), 0),
       addSkill ~> addSkill addLabel (AnyInput, 1),
       underReview ~> underReview addLabel AnyInput
