@@ -97,6 +97,7 @@ class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
     logger.info(s"[editInlineKeyboard] going to send $json")
     basicRequest
       .post(uri"$telegramUrl/bot$botToken/editMessageReplyMarkup")
+      .header(Header.contentType(MediaType.ApplicationJson))
       .body(json)
       .send(sttpBackend)
       .getBodyOrFail()
