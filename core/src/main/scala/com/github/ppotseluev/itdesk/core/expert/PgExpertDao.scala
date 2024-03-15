@@ -54,7 +54,7 @@ object PgExpertDao {
         name = name,
         description = description,
         photo = photo,
-        skills = skills.map(_.toInt).map(Skill.withValue).toSet.some
+        skills = skills.map(Skill.withValue).toSet.some
       ),
       status = status
     )
