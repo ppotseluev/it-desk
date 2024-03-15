@@ -98,7 +98,7 @@ object TelegramWebhook extends LazyLogging {
     def handleTelegramEvent(webhookSecret: WebhookSecret)(update: Update): F[Either[Error, Unit]] =
       update.message match {
         case Some(TgMessage(_, Some(user), chat, rawInput, photo)) if !user.isBot =>
-          val input = rawInput.getOrElse("").stripSuffix("@it_desk_admin_bot") //TODO
+          val input = rawInput.getOrElse("").stripSuffix("@it_desk_admin_bot")
           val chatId = chat.id.toString
           val bot = bots(webhookSecret)
           val shouldReact = bot.chatId.forall(_ == chatId)

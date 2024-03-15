@@ -30,14 +30,14 @@ object BotDsl {
 
   private class Enricher[F[_]](commands: List[BotCommand]) extends (BotDsl[F, *] ~> BotDsl[F, *]) {
     override def apply[A](fa: BotDsl[F, A]): BotDsl[F, A] = fa match {
-      case Reply(message) => Reply(message.copy(availableCommands = commands))
-      case x              => x
+      case Reply(message) if message.availableCommands.isEmpty =>
+        Reply(message.copy(availableCommands = commands))
+      case x => x
     }
   }
 
   private[bots] implicit class BotScriptSyntax[F[_], T](val script: BotScript[F, T])
       extends AnyVal {
-    //TODO apply this override only if 'original' commands are not present?
     def withAvailableCommands(commands: List[BotCommand]): Free[BotDsl[F, *], T] =
       script.mapK(new Enricher[F](commands))
   }

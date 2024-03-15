@@ -49,7 +49,7 @@ class AdminBot[F[_]: Sync](implicit
   private def showExperts: BotScript[F, Unit] = execute {
     expertService.getAllExperts
   }.flatMap { experts =>
-    experts.headOption match { //TODO
+    experts.headOption match {
       case Some(expert) =>
         val txt = expert.show
         reply(txt, expert.info.photo.map(_.asRight))
