@@ -75,7 +75,8 @@ lazy val `bots-lib` = project
       Dependency.enumeratrum,
       Dependency.kittens,
       Dependency.catsFree,
-      Dependency.scalaGraph
+      Dependency.scalaGraph,
+      Dependency.scalaLogging
     ) ++ Dependency.sttp.all
   )
   .dependsOn(
@@ -118,7 +119,6 @@ lazy val `api` = project
     settings,
     libraryDependencies ++= Seq(
       Dependency.enumeratrum,
-      Dependency.scalaLogging,
       Dependency.logback
     ) ++ Dependency.httpServer.all ++ Dependency.pureconfig.all,
     assembly / mainClass := Some("com.github.ppotseluev.itdesk.api.Main")

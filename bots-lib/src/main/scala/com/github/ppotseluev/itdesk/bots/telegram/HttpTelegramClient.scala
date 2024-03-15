@@ -16,13 +16,13 @@ import sttp.client3.circe._
 import sttp.model.Header
 import sttp.model.MediaType
 import sttp.model.StatusCode
-
 import TelegramModel._
+import com.typesafe.scalalogging.LazyLogging
 
 class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
     sttpBackend: SttpBackend[F, Any],
     F: MonadError[F, Throwable]
-) extends TelegramClient[F] {
+) extends TelegramClient[F] with LazyLogging {
 
   override def send(
       botToken: String
@@ -94,6 +94,7 @@ class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
     val json = Printer.noSpaces
       .copy(dropNullValues = true) //TODO use for all ethods here
       .print(keyboardUpdate.asJson)
+    logger.info(s"[editInlineKeyboard] going to send $json")
     basicRequest
       .post(uri"$telegramUrl/bot$botToken/editMessageReplyMarkup")
       .body(json)
