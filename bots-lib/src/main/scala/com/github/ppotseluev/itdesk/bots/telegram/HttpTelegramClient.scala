@@ -90,13 +90,17 @@ class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
   override def editInlineKeyboard(
       botToken: String,
       keyboardUpdate: KeyboardUpdate
-  ): F[Unit] =
+  ): F[Unit] = {
+    val json = Printer.noSpaces
+      .copy(dropNullValues = true) //TODO use for all ethods here
+      .print(keyboardUpdate.asJson)
     basicRequest
       .post(uri"$telegramUrl/bot$botToken/editMessageReplyMarkup")
-      .body(keyboardUpdate)
+      .body(json)
       .send(sttpBackend)
       .getBodyOrFail()
       .void
+  }
 }
 
 object HttpTelegramClient {
