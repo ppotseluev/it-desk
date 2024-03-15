@@ -33,10 +33,6 @@ object TelegramModel {
       callbackData: String
   )
 
-  object KeyboardButton {
-    implicit val keyboardButtonCodec: Codec[KeyboardButton] = deriveCodec
-  }
-
   @ConfiguredJsonCodec
   case class ReplyMarkup(
       keyboard: Option[Seq[Seq[KeyboardButton]]] = None,
@@ -44,10 +40,6 @@ object TelegramModel {
       isPersistent: Option[Boolean] = None,
       removeKeyboard: Option[Boolean] = None
   )
-
-  object ReplyMarkup {
-    implicit val keyboardCodec: Codec[ReplyMarkup] = deriveCodec
-  }
 
   @ConfiguredJsonCodec
   case class MessageSource(
@@ -64,7 +56,6 @@ object TelegramModel {
      * Url or tg file_id
      */
     type PhotoUrl = String
-    implicit val messageSourceCodec: Codec[MessageSource] = deriveCodec
   }
 
   @ConfiguredJsonCodec
@@ -78,10 +69,6 @@ object TelegramModel {
   @ConfiguredJsonCodec
   case class Chat(id: Long)
 
-  object Chat {
-    implicit val codec: Codec[Chat] = deriveCodec
-  }
-
   @ConfiguredJsonCodec
   case class User(
       id: Long,
@@ -90,10 +77,6 @@ object TelegramModel {
       username: Option[String],
       isBot: Boolean
   )
-
-  object User {
-    implicit val codec: Codec[User] = deriveCodec
-  }
 
   @ConfiguredJsonCodec
   case class Photo(
@@ -113,10 +96,6 @@ object TelegramModel {
       photo: Option[List[Photo]]
   )
 
-  object TgMessage {
-    implicit val codec: Codec[TgMessage] = deriveCodec
-  }
-
   @ConfiguredJsonCodec
   case class CallbackQuery(
       id: String,
@@ -131,9 +110,5 @@ object TelegramModel {
       message: Option[TgMessage],
       callbackQuery: Option[CallbackQuery]
   )
-
-  object Update {
-    implicit val codec: Codec[Update] = deriveCodec
-  }
 
 }
