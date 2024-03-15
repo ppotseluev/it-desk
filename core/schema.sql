@@ -25,6 +25,7 @@ CREATE TABLE experts(
     description     TEXT              DEFAULT NULL,
     status          SMALLINT          NOT NULL,
     photo           BYTEA             DEFAULT NULL,
+    skills          SMALLINT[]        DEFAULT '{}'::SMALLINT[],
     PRIMARY KEY (user_id),
     CONSTRAINT FK_UserId FOREIGN KEY (user_id) REFERENCES users(id)
 );

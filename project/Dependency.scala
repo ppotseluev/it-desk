@@ -38,7 +38,12 @@ object Dependency {
     val all = Seq(tapirCore, tapirJsonCirce, tapirHttp4s, tapirPrometheus, http4sBlaze)
   }
 
-  val doobieCore = "org.tpolecat" %% "doobie-core" % "1.0.0-RC5"
+  object doobie {
+    val version = "1.0.0-RC5"
+    val core = "org.tpolecat" %% "doobie-core" % version
+    val postgres = "org.tpolecat" %% "doobie-postgres" % version
+    val all = Seq(core, postgres)
+  }
   val pgConnector = "org.postgresql" % "postgresql" % "42.7.1"
 
   val kindProjector = "org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full

@@ -4,7 +4,7 @@ import cats.effect.Sync
 import cats.effect.kernel.Async
 import cats.implicits._
 import com.github.ppotseluev.itdesk.api.BotBundle
-import com.github.ppotseluev.itdesk.bots.Context
+import com.github.ppotseluev.itdesk.bots.CallContext
 import com.github.ppotseluev.itdesk.bots.TgPhoto
 import com.github.ppotseluev.itdesk.bots.TgUser
 import com.github.ppotseluev.itdesk.bots.core.BotError
@@ -88,7 +88,7 @@ object TelegramWebhook extends LazyLogging {
       .securityIn(auth.apiKey(header[WebhookSecret]("X-Telegram-Bot-Api-Secret-Token")))
 
   class Handler[F[_]: Sync](
-      botInterpreter: Context => BotInterpreter[F],
+      botInterpreter: CallContext => BotInterpreter[F],
       bots: Map[WebhookSecret, BotBundle[F]]
   ) {
     private val success = ().asRight[Error].pure[F]
@@ -114,7 +114,7 @@ object TelegramWebhook extends LazyLogging {
                 )
               }
             }
-            val ctx = Context(
+            val ctx = CallContext(
               botToken = bot.token,
               botId = bot.botType.id,
               chatId = chatId,

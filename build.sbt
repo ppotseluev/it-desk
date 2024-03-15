@@ -87,9 +87,8 @@ lazy val `storage` = project
     name := "storage",
     settings,
     libraryDependencies ++= Seq(
-      Dependency.doobieCore,
       Dependency.pgConnector
-    )
+    ) ++ Dependency.doobie.all
   )
   .dependsOn(
     `serialization`

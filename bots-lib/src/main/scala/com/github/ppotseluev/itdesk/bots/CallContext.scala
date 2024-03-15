@@ -3,7 +3,7 @@ package com.github.ppotseluev.itdesk.bots
 import com.github.ppotseluev.itdesk.bots.core.BotId
 import com.github.ppotseluev.itdesk.bots.core.ChatId
 
-case class Context(
+case class CallContext(
     botToken: String,
     botId: BotId,
     chatId: ChatId,

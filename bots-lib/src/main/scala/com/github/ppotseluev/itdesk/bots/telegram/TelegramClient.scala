@@ -40,6 +40,7 @@ object TelegramClient {
   @ConfiguredJsonCodec
   case class ReplyMarkup(
       keyboard: Option[Seq[Seq[KeyboardButton]]] = None,
+      isPersistent: Boolean = true,
       removeKeyboard: Option[Boolean] = None
   )
 

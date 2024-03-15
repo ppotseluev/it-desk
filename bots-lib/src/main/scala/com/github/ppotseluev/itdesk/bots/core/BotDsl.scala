@@ -4,7 +4,7 @@ import cats.free.Free
 import cats.free.Free.liftF
 import cats.implicits._
 import cats.~>
-import com.github.ppotseluev.itdesk.bots.Context
+import com.github.ppotseluev.itdesk.bots.CallContext
 import com.github.ppotseluev.itdesk.bots.core.Message.Payload
 
 sealed trait BotDsl[+F[_], T]
@@ -24,7 +24,7 @@ object BotDsl {
 
   private[bots] case class Execute[F[_], T](f: F[T]) extends BotDsl[F, T]
 
-  private[bots] case class GetContext[F[_]]() extends BotDsl[F, Context]
+  private[bots] case object GetCallContext extends BotDsl[Nothing, CallContext]
 
   private[bots] case class RaiseError(botError: BotError) extends BotDsl[Nothing, Unit]
 
@@ -37,6 +37,7 @@ object BotDsl {
 
   private[bots] implicit class BotScriptSyntax[F[_], T](val script: BotScript[F, T])
       extends AnyVal {
+    //TODO apply this override only if 'original' commands are not present?
     def withAvailableCommands(commands: List[BotCommand]): Free[BotDsl[F, *], T] =
       script.mapK(new Enricher[F](commands))
   }
@@ -55,9 +56,9 @@ object BotDsl {
 
   def execute[F[_], T](f: F[T]): BotScript[F, T] = liftF(Execute(f))
 
-  def getContext[F[_]]: BotScript[F, Context] = liftF(GetContext())
+  def getCallContext[F[_]]: BotScript[F, CallContext] = liftF(GetCallContext)
 
-  def getInput[F[_]]: BotScript[F, String] = getContext.map(_.inputText)
+  def getInput[F[_]]: BotScript[F, String] = getCallContext.map(_.inputText)
 
   def doNothing[F[_]]: BotScript[F, Unit] = ().pure[BotScript[F, *]]
 

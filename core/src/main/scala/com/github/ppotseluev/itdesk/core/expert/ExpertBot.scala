@@ -1,12 +1,18 @@
 package com.github.ppotseluev.itdesk.core.expert
 
+import cats.effect.Ref
 import cats.effect.Sync
 import cats.implicits._
-import com.github.ppotseluev.itdesk.bots.Context
+import com.github.ppotseluev.itdesk.bots.CallContext
 import com.github.ppotseluev.itdesk.bots.core.Bot
 import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
+import com.github.ppotseluev.itdesk.bots.core.BotCommand
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.BotError.AccessDenied
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.EqualTo
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.HasPhoto
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.OneOf
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient
@@ -28,7 +34,7 @@ class ExpertBot[F[_]: Sync](implicit
   private val checkExpertScript: BotScript[F, Unit] =
     for {
       time <- getTime
-      ctx <- getContext
+      ctx <- getCallContext
       isInviteValid <- hasValidInvite(ctx.user.username, time)
       _ <-
         if (isInviteValid) registerUser(ctx) >> greet
@@ -44,12 +50,12 @@ class ExpertBot[F[_]: Sync](implicit
       }
     }
 
-  private def registerUser(ctx: Context): BotScript[F, Unit] = execute {
+  private def registerUser(ctx: CallContext): BotScript[F, Unit] = execute {
     expertService.register(ctx.user.id)
   }
 
-  private def updateInfo(f: (Context, Expert.Info) => Expert.Info): BotScript[F, Unit] =
-    getContext[F].flatMap { ctx =>
+  private def updateInfo(f: (CallContext, Expert.Info) => Expert.Info): BotScript[F, Unit] =
+    getCallContext[F].flatMap { ctx =>
       execute {
         expertService.updateInfo(
           tgUserId = ctx.user.id,
@@ -58,17 +64,19 @@ class ExpertBot[F[_]: Sync](implicit
       }
     }
 
-  private def name(ctx: Context, info: Expert.Info): Expert.Info =
+  private def name(ctx: CallContext, info: Expert.Info): Expert.Info =
     info.copy(name = ctx.inputText.some)
 
-  private def description(ctx: Context, info: Expert.Info): Expert.Info =
+  private def description(ctx: CallContext, info: Expert.Info): Expert.Info =
     info.copy(description = ctx.inputText.some)
 
-  private def photo(photo: Option[Array[Byte]])(ctx: Context, info: Expert.Info): Expert.Info = {
+  private def photo(
+      photo: Option[Array[Byte]]
+  )(ctx: CallContext, info: Expert.Info): Expert.Info = {
     info.copy(photo = photo)
   }
 
-  private def getPhoto(ctx: Context): BotScript[F, Option[Array[Byte]]] = execute {
+  private def getPhoto(ctx: CallContext): BotScript[F, Option[Array[Byte]]] = execute {
     ctx.inputPhoto.flatMap(_.maxByOption(_.width)) match {
       case Some(photo) =>
         for {
@@ -93,26 +101,57 @@ class ExpertBot[F[_]: Sync](implicit
   )
   private val photoAdded = Node[F](
     "add_photo",
-    (getContext[F] >>= getPhoto).flatMap { file =>
+    (getCallContext[F] >>= getPhoto).flatMap { file =>
       updateInfo(photo(file))
     } >> reply(
-      "Благодарим за заполнение анкеты! Мы уже проверяем данные и скоро активируем твой профиль"
+//      "Благодарим за заполнение анкеты! Мы уже проверяем данные и скоро активируем твой профиль"
+      "Теперь выберите ваши скиллы. Отметьте все подходящие"
     )
   )
+
+  private val expertsSkills: Map[Long, Ref[F, Set[Skill]]] = Map.empty
+
+  private val getExpert: BotScript[F, Expert] = ???
+  private val addSkillScript: BotScript[F, Unit] = ???
+
+  private val addSkill = Node[F](
+    "add_skill",
+    for {
+      input <- getInput[F]
+      expert <- getExpert
+      _ <- input match {
+        case s if s.startsWith("\uD83D\uDD32") => addSkillScript // add skill (select)
+        case s if s.startsWith("✅")            => ??? // remove skill (unselect)
+        case _                                 => ???
+      }
+      commands: Seq[BotCommand] = {
+//        expert.info.skills TODO build from selected skills and all known skills
+        ???
+      }
+      //TODO and somehow modify commands of prev msg
+    } yield ()
+  )
+
   private val underReview = Node[F](
     "under_review",
     reply("Мы проверяем данные, всё уже почти готово ⏳")
   )
 
+  private val skillsCheckbox = Skill.values.map(_.name).toList.map(s => s"🔲$s")
+
   private val graph: BotGraph[F] =
     Graph(
-      start ~> verifyAndAskName by "/start",
-      verifyAndAskName ~> nameAdded byAnyInput,
-      nameAdded ~> descriptionAdded byAnyInput,
-      descriptionAdded ~> photoAdded byAnyPhoto 0,
-      descriptionAdded ~> descriptionAdded byAnyInput 1,
-      photoAdded ~> underReview byAnyInput,
-      underReview ~> underReview byAnyInput
+      start ~> verifyAndAskName addLabel EqualTo("/start"),
+      verifyAndAskName ~> nameAdded addLabel AnyInput,
+      nameAdded ~> descriptionAdded addLabel AnyInput,
+      descriptionAdded ~> photoAdded addLabel (HasPhoto, 0),
+      descriptionAdded ~> descriptionAdded addLabel (AnyInput, 1),
+      photoAdded ~> addSkill addLabel OneOf(skillsCheckbox),
+      addSkill ~> underReview addLabel (EqualTo(
+        "Готово!"
+      ), 0, doNothing.some), //TODO we need this override? flush cache here?
+      addSkill ~> addSkill addLabel (OneOf(Skill.values.map(_.name).toList), 1), //TODO
+      underReview ~> underReview addLabel AnyInput
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
