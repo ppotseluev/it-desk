@@ -9,6 +9,7 @@ import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotCommand
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.BotError.AccessDenied
+import com.github.ppotseluev.itdesk.bots.core.BotError.IllegalInput
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.EqualTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.HasPhoto
@@ -35,10 +36,17 @@ class ExpertBot[F[_]: Sync](implicit
     for {
       time <- getTime
       ctx <- getCallContext
-      isInviteValid <- hasValidInvite(ctx.user.username, time)
-      _ <-
-        if (isInviteValid) registerUser(ctx) >> greet
-        else reply[F]("Access denied") >> raiseError[F](AccessDenied)
+      _ <- ctx.user.username match {
+        case Some(username) =>
+          for {
+            isInviteValid <- hasValidInvite(username, time)
+            _ <-
+              if (isInviteValid) registerUser(ctx) >> greet
+              else reply[F]("Access denied") >> raiseError[F](AccessDenied)
+          } yield ()
+        case None =>
+          raiseError[F](IllegalInput("Missed username"))
+      }
     } yield ()
 
   private def hasValidInvite(tgUsername: String, nowTime: Instant): BotScript[F, Boolean] =

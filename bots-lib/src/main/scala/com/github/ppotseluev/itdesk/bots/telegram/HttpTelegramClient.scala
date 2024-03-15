@@ -3,11 +3,7 @@ package com.github.ppotseluev.itdesk.bots.telegram
 import cats.MonadError
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.FileInfo
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.KeyboardUpdate
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource.PhotoUrl
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.TgResponse
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel.MessageSource.PhotoUrl
 import io.circe.Json
 import io.circe.Printer
 import io.circe.syntax._
@@ -20,6 +16,8 @@ import sttp.client3.circe._
 import sttp.model.Header
 import sttp.model.MediaType
 import sttp.model.StatusCode
+
+import TelegramModel._
 
 class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
     sttpBackend: SttpBackend[F, Any],

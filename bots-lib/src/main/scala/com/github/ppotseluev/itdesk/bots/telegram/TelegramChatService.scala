@@ -6,16 +6,15 @@ import com.github.ppotseluev.itdesk.bots.core.BotCommand
 import com.github.ppotseluev.itdesk.bots.core.ChatId
 import com.github.ppotseluev.itdesk.bots.core.Message
 import com.github.ppotseluev.itdesk.bots.runtime.ChatService
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.InlineButton
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.KeyboardButton
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.ReplyMarkup
+
+import TelegramModel._
 
 class TelegramChatService[F[_]: MonadThrow](telegramClient: TelegramClient[F])
     extends ChatService[F] {
 
   override def send(botToken: String)(chatId: ChatId)(message: Message): F[Unit] =
     buildKeyboard(message.availableCommands).flatMap { keyboard =>
-      val msg = TelegramClient.MessageSource(chatId, message.payload.text, Some(keyboard))
+      val msg = MessageSource(chatId, message.payload.text, Some(keyboard))
       telegramClient.send(botToken)(msg, message.payload.photo)
     }
 

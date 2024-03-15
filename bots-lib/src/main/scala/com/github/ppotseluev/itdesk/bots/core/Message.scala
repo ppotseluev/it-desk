@@ -1,6 +1,6 @@
 package com.github.ppotseluev.itdesk.bots.core
 
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource.PhotoUrl
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel.MessageSource.PhotoUrl
 
 case class Message(
     payload: Message.Payload,
