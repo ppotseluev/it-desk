@@ -20,7 +20,7 @@ object TelegramModel {
   @ConfiguredJsonCodec
   case class KeyboardUpdate(
       chatId: String,
-      messageId: String,
+      messageId: Long,
       replyMarkup: ReplyMarkup
   )
 
@@ -106,7 +106,7 @@ object TelegramModel {
 
   @ConfiguredJsonCodec
   case class TgMessage(
-      messageId: Int,
+      messageId: Long,
       from: Option[User],
       chat: Chat,
       text: Option[String],
@@ -121,8 +121,8 @@ object TelegramModel {
   case class CallbackQuery(
       id: String,
       from: User,
-      message: TgMessage,
-      data: String
+      message: TgMessage, //TODO check API doc, it can't be missed, right?
+      data: Option[String]
   )
 
   @ConfiguredJsonCodec

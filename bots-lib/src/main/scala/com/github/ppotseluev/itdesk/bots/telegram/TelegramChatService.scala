@@ -1,5 +1,6 @@
 package com.github.ppotseluev.itdesk.bots.telegram
 
+import cats.ApplicativeThrow
 import cats.MonadThrow
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.core.BotCommand
@@ -13,12 +14,16 @@ class TelegramChatService[F[_]: MonadThrow](telegramClient: TelegramClient[F])
     extends ChatService[F] {
 
   override def send(botToken: String)(chatId: ChatId)(message: Message): F[Unit] =
-    buildKeyboard(message.availableCommands).flatMap { keyboard =>
+    TelegramChatService.buildKeyboard[F](message.availableCommands).flatMap { keyboard =>
       val msg = MessageSource(chatId, message.payload.text, Some(keyboard))
       telegramClient.send(botToken)(msg, message.payload.photo)
     }
+}
 
-  private def buildKeyboard(availableCommands: Seq[BotCommand]): F[ReplyMarkup] = {
+object TelegramChatService {
+  def buildKeyboard[F[_]: ApplicativeThrow](
+      availableCommands: Seq[BotCommand]
+  ): F[ReplyMarkup] = {
     if (availableCommands.isEmpty)
       ReplyMarkup(removeKeyboard = Some(true)).pure[F]
     else {
@@ -45,4 +50,5 @@ class TelegramChatService[F[_]: MonadThrow](telegramClient: TelegramClient[F])
       }
     }
   }
+
 }

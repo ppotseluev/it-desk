@@ -7,11 +7,9 @@ import com.github.ppotseluev.itdesk.api.BotBundle
 import com.github.ppotseluev.itdesk.bots.CallContext
 import com.github.ppotseluev.itdesk.bots.core.BotError
 import com.github.ppotseluev.itdesk.bots.runtime.BotInterpreter
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel._
 import com.typesafe.scalalogging.LazyLogging
-import io.circe.Codec
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.ConfiguredJsonCodec
-import io.circe.generic.semiauto.deriveCodec
 import sttp.tapir.Endpoint
 import sttp.tapir._
 import sttp.tapir.auth
@@ -20,7 +18,6 @@ import sttp.tapir.generic.auto._
 import sttp.tapir.header
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.stringBody
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel._
 
 object TelegramWebhook extends LazyLogging {
   implicit private val circeConfig: Configuration = Configuration.default.withSnakeCaseMemberNames

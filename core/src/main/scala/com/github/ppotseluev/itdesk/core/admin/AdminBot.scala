@@ -7,7 +7,7 @@ import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.BotDsl.reply
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
-import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.EqualTo
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.equalTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.core.expert.ExpertService
@@ -39,11 +39,11 @@ class AdminBot[F[_]: Sync](implicit
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> selectAction addLabel EqualTo("/start"),
-      selectAction ~> askUsername addLabel EqualTo("Выдать доступ эксперту"),
-      askUsername ~> selectAction addLabel (EqualTo("Отмена"), 0),
+      start ~> selectAction addLabel equalTo("/start"),
+      selectAction ~> askUsername addLabel equalTo("Выдать доступ эксперту"),
+      askUsername ~> selectAction addLabel (equalTo("Отмена"), 0),
       askUsername ~> expertAdded addLabel (AnyInput, 1),
-      expertAdded ~> selectAction addLabel EqualTo("Ok")
+      expertAdded ~> selectAction addLabel equalTo("Ok")
     )
 
   private def showExperts: BotScript[F, Unit] = execute {

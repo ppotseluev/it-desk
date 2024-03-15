@@ -26,7 +26,7 @@ object BotDsl {
 
   private[bots] case object GetCallContext extends BotDsl[Nothing, CallContext]
 
-  private[bots] case class RaiseError(botError: BotError) extends BotDsl[Nothing, Unit]
+  private[bots] case class RaiseError[T](botError: BotError) extends BotDsl[Nothing, T]
 
   private class Enricher[F[_]](commands: List[BotCommand]) extends (BotDsl[F, *] ~> BotDsl[F, *]) {
     override def apply[A](fa: BotDsl[F, A]): BotDsl[F, A] = fa match {
@@ -62,6 +62,14 @@ object BotDsl {
 
   def doNothing[F[_]]: BotScript[F, Unit] = ().pure[BotScript[F, *]]
 
-  def raiseError[F[_]](botError: BotError): BotScript[F, Unit] =
+  def raiseError[F[_], T](botError: BotError): BotScript[F, T] =
     liftF(RaiseError(botError))
+
+  def getOrFail[F[_], T](fieldName: String, f: CallContext => Option[T]): BotScript[F, T] =
+    getCallContext[F].flatMap { ctx =>
+      f(ctx) match {
+        case Some(value) => value.pure[BotScript[F, *]]
+        case None        => raiseError[F, T](BotError.missedField(fieldName))
+      }
+    }
 }
