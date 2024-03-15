@@ -42,32 +42,36 @@ object TelegramWebhook extends LazyLogging {
 
     private def skip = success
 
-    def handleTelegramEvent(webhookSecret: WebhookSecret)(update: Update): F[Either[Error, Unit]] =
-      update.message match {
-        case Some(TgMessage(_, Some(user), chat, rawInput, photo)) if !user.isBot =>
-          val input = rawInput.getOrElse("").stripSuffix("@it_desk_admin_bot")
-          val chatId = chat.id.toString
-          val bot = bots(webhookSecret)
-          val shouldReact = bot.chatId.forall(_ == chatId)
-          if (shouldReact) {
-            val ctx = CallContext(
-              botToken = bot.token,
-              botId = bot.botType.id,
-              chatId = chatId,
-              inputText = input,
-              user = user,
-              inputPhoto = photo,
-              callbackQuery = update.callbackQuery
-            )
-            val f = bot.logic(ctx).foldMap(botInterpreter(ctx))
-            f.recoverWith { case e: BotError =>
-              Sync[F].delay(logger.warn("Bot execution exception", e))
-            }.map(_.asRight)
-          } else {
-            skip
-          }
-        case _ => skip
-      }
+    def handleTelegramEvent(
+        webhookSecret: WebhookSecret
+    )(update: Update): F[Either[Error, Unit]] = Sync[F].delay {
+      val bot = bots(webhookSecret)
+      logger.info(s"[${bot.botType}] received $update")
+    } >> (update.message match {
+      case Some(TgMessage(_, Some(user), chat, rawInput, photo)) if !user.isBot =>
+        val input = rawInput.getOrElse("").stripSuffix("@it_desk_admin_bot")
+        val chatId = chat.id.toString
+        val bot = bots(webhookSecret)
+        val shouldReact = bot.chatId.forall(_ == chatId)
+        if (shouldReact) {
+          val ctx = CallContext(
+            botToken = bot.token,
+            botId = bot.botType.id,
+            chatId = chatId,
+            inputText = input,
+            user = user,
+            inputPhoto = photo,
+            callbackQuery = update.callbackQuery
+          )
+          val f = bot.logic(ctx).foldMap(botInterpreter(ctx))
+          f.recoverWith { case e: BotError =>
+            Sync[F].delay(logger.warn("Bot execution exception", e))
+          }.map(_.asRight)
+        } else {
+          skip
+        }
+      case _ => skip
+    })
 
   }
 
