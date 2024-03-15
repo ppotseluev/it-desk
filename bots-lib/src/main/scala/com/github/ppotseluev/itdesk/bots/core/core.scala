@@ -6,6 +6,5 @@ package object core {
   type BotLogic[F[_]] = CallContext => BotScript[F, Unit]
   type ChatId = String
   type BotStateId = String
-  type BotCommand = String
   type BotId = String
 }

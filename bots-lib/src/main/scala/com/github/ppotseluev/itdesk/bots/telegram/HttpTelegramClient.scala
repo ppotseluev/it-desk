@@ -4,6 +4,7 @@ import cats.MonadError
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.FileInfo
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.KeyboardUpdate
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource.PhotoUrl
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.TgResponse
@@ -87,6 +88,17 @@ class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
       .response(asByteArray)
       .send(sttpBackend)
       .getBodyOrFail()
+
+  override def editInlineKeyboard(
+      botToken: String,
+      keyboardUpdate: KeyboardUpdate
+  ): F[Unit] =
+    basicRequest
+      .post(uri"$telegramUrl/bot$botToken/editMessageReplyMarkup")
+      .body(keyboardUpdate)
+      .send(sttpBackend)
+      .getBodyOrFail()
+      .void
 }
 
 object HttpTelegramClient {

@@ -15,7 +15,7 @@ import scalax.collection.immutable.Graph
 class GraphBotScenario[F[_]](
     val graph: BotGraph[F],
     val startFrom: BotStateId,
-    val globalCommands: Map[BotCommand, BotScript[F, Unit]]
+    val globalCommands: Map[String, BotScript[F, Unit]]
 ) {
   private object EdgeImplicits extends LEdgeImplicits[EdgeLabel[F]]
   import EdgeImplicits._
@@ -40,11 +40,11 @@ class GraphBotScenario[F[_]](
   private def asCommands(edge: graph.EdgeT): List[BotCommand] =
     edge.expectedInputPredicate match {
       case ExpectedInputPredicate.EqualTo(expectedText) =>
-        expectedText :: Nil
+        BotCommand(expectedText) :: Nil
       case ExpectedInputPredicate.AnyInput | ExpectedInputPredicate.HasPhoto =>
         Nil
       case ExpectedInputPredicate.OneOf(commands) =>
-        commands
+        commands.map(BotCommand.apply)
     }
 
   private def isMatched(ctx: CallContext)(edge: graph.EdgeT): Boolean =
