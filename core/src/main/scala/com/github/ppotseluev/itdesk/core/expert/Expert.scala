@@ -1,7 +1,6 @@
 package com.github.ppotseluev.itdesk.core.expert
 
 import cats.Show
-import com.github.ppotseluev.itdesk.core.expert.ExpertStatus
 import com.github.ppotseluev.itdesk.core.user.User
 
 case class Expert(
@@ -14,6 +13,7 @@ object Expert {
   implicit val show: Show[Expert] = Show.show { expert =>
     s"""
       |${expert.info.name.getOrElse("")}\n
+      |С чем готов помочь: ${expert.info.skills.toSet.flatten.map(_.name).mkString(", ")}
       |${expert.info.description.getOrElse("")}
       |""".stripMargin
   }

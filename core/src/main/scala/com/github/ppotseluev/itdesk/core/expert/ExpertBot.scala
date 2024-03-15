@@ -101,13 +101,13 @@ class ExpertBot[F[_]: Sync](implicit
   private val descriptionAdded = Node[F](
     "enter_description",
     updateInfo(description) >>
-      reply("Теперь загрузите фото")
+      reply("Теперь загрузи фото")
   )
   private val photoAdded = Node[F](
     "add_photo",
     (getCallContext[F] >>= getPhoto).flatMap { file =>
       updateInfo(photo(file))
-    } >> reply("Теперь выберите ваши скиллы. Отметьте все подходящие")
+    } >> reply("Выбери, по каким темам ты будешь проводить консультации. Отметь все подходящие варианты")
   )
 
   private val getExpert: BotScript[F, Expert] =
@@ -149,6 +149,9 @@ class ExpertBot[F[_]: Sync](implicit
         )
     }.toList :+ finishCommand
 
+  private val hideSkillsKeyboard: BotScript[F, Unit] =
+    editSkillsKeyboard(Nil)
+
   private def editSkillsKeyboard(newKeyboard: List[BotCommand.Callback]): BotScript[F, Unit] =
     for {
       messageId <- getOrFail("callback.message_id", _.callbackQuery.map(_.message.messageId))
@@ -184,7 +187,7 @@ class ExpertBot[F[_]: Sync](implicit
 
   private val underReview = Node[F](
     "under_review",
-    reply("Спасибо, мы проверяем данные, всё уже почти готово ⏳")
+    reply("Благодарим за заполнение анкеты! Мы уже проверяем данные и скоро активируем твой профиль ⏳")
   )
 
   private val graph: BotGraph[F] =
@@ -195,7 +198,11 @@ class ExpertBot[F[_]: Sync](implicit
       descriptionAdded ~> photoAdded addLabel (HasPhoto, 0),
       descriptionAdded ~> descriptionAdded addLabel (AnyInput, 1),
       photoAdded ~> addSkill addLabel OneOf(initialSkillsCheckbox),
-      addSkill ~> underReview addLabel (EqualTo(finishCommand), 0),
+      addSkill ~> underReview addLabel (
+        EqualTo(finishCommand),
+        order = 0,
+        actionOverride = (hideSkillsKeyboard >> underReview.action).some
+      ),
       addSkill ~> addSkill addLabel (AnyInput, 1),
       underReview ~> underReview addLabel AnyInput
     )
