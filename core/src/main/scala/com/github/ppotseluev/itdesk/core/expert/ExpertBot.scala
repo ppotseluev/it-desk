@@ -151,9 +151,6 @@ class ExpertBot[F[_]: Sync](implicit
         )
     }.toList :+ finishCommand
 
-  private val hideSkillsKeyboard: BotScript[F, Unit] =
-    editSkillsKeyboard(Nil)
-
   private def editSkillsKeyboard(newKeyboard: List[BotCommand.Callback]): BotScript[F, Unit] =
     for {
       messageId <- getOrFail("callback.message_id", _.callbackQuery.map(_.message.messageId))
@@ -202,13 +199,10 @@ class ExpertBot[F[_]: Sync](implicit
       descriptionAdded ~> photoAdded addLabel (HasPhoto, 0),
       descriptionAdded ~> descriptionAdded addLabel (AnyInput, 1),
       photoAdded ~> addSkill addLabel OneOf(initialSkillsCheckbox),
-      addSkill ~> underReview addLabel (
-        EqualTo(finishCommand),
-        order = 0,
-        actionOverride = (hideSkillsKeyboard >> underReview.action).some
-      ),
+      addSkill ~> underReview addLabel (EqualTo(finishCommand), 0),
       addSkill ~> addSkill addLabel (AnyInput, 1),
-      underReview ~> underReview addLabel AnyInput
+      underReview ~> verifyAndAskName addLabel (equalTo("/start"), 0),
+      underReview ~> underReview addLabel (AnyInput, 1)
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
