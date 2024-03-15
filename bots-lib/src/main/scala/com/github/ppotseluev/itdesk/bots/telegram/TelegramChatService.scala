@@ -41,7 +41,7 @@ object TelegramChatService {
         val buttons = regularCommands
           .map(KeyboardButton.apply)
           .map(Seq(_))
-        ReplyMarkup(keyboard = Some(buttons)).pure[F]
+        ReplyMarkup(keyboard = Some(buttons), isPersistent = true.some).pure[F]
       } else {
         val buttons = callbackCommands
           .map(c => InlineButton(c.text, c.callbackData))

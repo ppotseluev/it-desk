@@ -41,7 +41,7 @@ object TelegramModel {
   case class ReplyMarkup(
       keyboard: Option[Seq[Seq[KeyboardButton]]] = None,
       inlineKeyboard: Option[Seq[Seq[InlineButton]]] = None,
-      isPersistent: Boolean = true,
+      isPersistent: Option[Boolean] = None,
       removeKeyboard: Option[Boolean] = None
   )
 
