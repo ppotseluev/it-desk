@@ -8,7 +8,7 @@ import com.github.ppotseluev.itdesk.core.user.UserDao.Filter
 import doobie.Transactor
 import doobie.implicits._
 
-class MysqlUserDao[F[_]](implicit
+class PgUserDao[F[_]](implicit
     transactor: Transactor[F],
     F: MonadCancelThrow[F]
 ) extends UserDao[F] {
@@ -17,9 +17,7 @@ class MysqlUserDao[F[_]](implicit
     sql"""
              INSERT INTO users (tg_user_id, role)
                VALUES (${user.tgUserId}, ${user.role})
-               ON DUPLICATE KEY UPDATE
-                  tg_user_id = ${user.tgUserId},
-                  role = ${user.role}
+               ON CONFLICT (tg_user_id, role) DO NOTHING
            """.update.run.transact(transactor).void
 
   override def getUser(role: Role, tgUserId: Long): F[Option[User]] =

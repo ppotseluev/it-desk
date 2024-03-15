@@ -39,7 +39,7 @@ object Dependency {
   }
 
   val doobieCore = "org.tpolecat" %% "doobie-core" % "1.0.0-RC5"
-  val mysqlConnector = "mysql" % "mysql-connector-java" % "8.0.33"
+  val pgConnector = "org.postgresql" % "postgresql" % "42.7.1"
 
   val kindProjector = "org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full
 

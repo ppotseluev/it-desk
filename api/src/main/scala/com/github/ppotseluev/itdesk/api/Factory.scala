@@ -13,13 +13,13 @@ import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramChatService
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient
 import com.github.ppotseluev.itdesk.core.InvitationsDao
-import com.github.ppotseluev.itdesk.core.MysqlInvitationsDao
+import com.github.ppotseluev.itdesk.core.PgInvitationsDao
 import com.github.ppotseluev.itdesk.core.admin.AdminBot
 import com.github.ppotseluev.itdesk.core.expert.ExpertBot
 import com.github.ppotseluev.itdesk.core.expert.ExpertDao
 import com.github.ppotseluev.itdesk.core.expert.ExpertService
-import com.github.ppotseluev.itdesk.core.expert.MysqlExpertDao
-import com.github.ppotseluev.itdesk.core.user.MysqlUserDao
+import com.github.ppotseluev.itdesk.core.expert.PgExpertDao
+import com.github.ppotseluev.itdesk.core.user.PgUserDao
 import com.github.ppotseluev.itdesk.core.user.UserDao
 import com.github.ppotseluev.itdesk.storage._
 import doobie.util.transactor.Transactor
@@ -77,21 +77,22 @@ class Factory[F[_]: Async: Parallel] {
     implicit val botInfoCodec: Codec[BotInfo] = deriveCodec
     implicit val keySchema: Schema.String[(ChatId, BotId)] = Schema.String(implicitly)
     implicit val scenarioSchema: Schema[BotInfo] = Schema.Json(implicitly)
-    new MySqlKeyValueDao(config.botStatesTable, transactor)
+    new PgKeyValueDao(config.botStatesTable, transactor)
   }
 
-  implicit lazy val invitationsDao: InvitationsDao[F] = new MysqlInvitationsDao[F]
-  implicit lazy val userDao: UserDao[F] = new MysqlUserDao[F]
-  implicit lazy val expertDao: ExpertDao[F] = new MysqlExpertDao[F]
+  implicit lazy val invitationsDao: InvitationsDao[F] = new PgInvitationsDao[F]
+  implicit lazy val userDao: UserDao[F] = new PgUserDao[F]
+  implicit lazy val expertDao: ExpertDao[F] = new PgExpertDao[F]
 
   implicit lazy val expertService: ExpertService[F] = ExpertService[F]
 
   private implicit lazy val transactor: Transactor[F] = {
     import config.dbConfig._
+    val url = s"jdbc:postgresql://$host:$port/$database"
     Transactor
       .fromDriverManager[F]
       .apply(
-        "com.mysql.cj.jdbc.Driver",
+        "org.postgresql.Driver",
         url,
         user,
         password,

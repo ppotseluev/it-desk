@@ -3,12 +3,12 @@ package com.github.ppotseluev.itdesk.api
 import com.github.ppotseluev.itdesk.api.telegram.WebhookSecret
 import com.github.ppotseluev.itdesk.bots.core.BotId
 import com.github.ppotseluev.itdesk.bots.core.ChatId
-import com.github.ppotseluev.itdesk.storage.MySqlConfig
+import com.github.ppotseluev.itdesk.storage.DbConfig
 
 case class Config(
     telegramUrl: String,
     apiConfig: Api.Config,
-    dbConfig: MySqlConfig,
+    dbConfig: DbConfig,
     botStatesTable: String,
     bots: Map[BotType, BotConfig],
     localEnv: Boolean = false

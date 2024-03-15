@@ -1,6 +1,7 @@
 package com.github.ppotseluev.itdesk.core
 
-import com.github.ppotseluev.itdesk.core.expert.Expert
+import com.github.ppotseluev.itdesk.core.expert.ExpertStatus
+import com.github.ppotseluev.itdesk.core.expert.Skill
 import com.github.ppotseluev.itdesk.core.user.Role
 import doobie.Get
 import doobie.implicits.javasql._
@@ -18,6 +19,8 @@ object DoobieSerialization {
   implicit val putTime: Put[Instant] = Put[Timestamp].tcontramap(Timestamp.from)
   implicit val getRole: Get[Role] = get(Role)
   implicit val putRole: Put[Role] = put[Role]
-  implicit val getExpertStatus: Get[Expert.Status] = get(Expert.Status)
-  implicit val putExpertStatus: Put[Expert.Status] = put[Expert.Status]
+  implicit val getExpertStatus: Get[ExpertStatus] = get(ExpertStatus)
+  implicit val putExpertStatus: Put[ExpertStatus] = put[ExpertStatus]
+  implicit val getSkill: Get[Skill] = get(Skill)
+  implicit val putSkill: Put[Skill] = put[Skill]
 }
