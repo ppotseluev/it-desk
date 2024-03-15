@@ -47,31 +47,41 @@ object TelegramWebhook extends LazyLogging {
     )(update: Update): F[Either[Error, Unit]] = Sync[F].delay {
       val bot = bots(webhookSecret)
       logger.info(s"[${bot.botType}] received $update")
-    } >> (update.message match {
-      case Some(TgMessage(_, Some(user), chat, rawInput, photo)) if !user.isBot =>
-        val input = rawInput.getOrElse("").stripSuffix("@it_desk_admin_bot")
-        val chatId = chat.id.toString
-        val bot = bots(webhookSecret)
-        val shouldReact = bot.chatId.forall(_ == chatId)
-        if (shouldReact) {
-          val ctx = CallContext(
-            botToken = bot.token,
-            botId = bot.botType.id,
-            chatId = chatId,
-            inputText = input,
-            user = user,
-            inputPhoto = photo,
-            callbackQuery = update.callbackQuery
-          )
-          val f = bot.logic(ctx).foldMap(botInterpreter(ctx))
-          f.recoverWith { case e: BotError =>
-            Sync[F].delay(logger.warn("Bot execution exception", e))
-          }.map(_.asRight)
-        } else {
-          skip
-        }
-      case _ => skip
-    })
+    } >> {
+      val input = update.message
+        .flatMap(_.text)
+        .map(_.stripSuffix("@it_desk_admin_bot"))
+        .orElse(update.callbackQuery.map(_.message).flatMap(_.text))
+        .getOrElse("")
+      val chatId = update.message
+        .map(_.chat.id)
+        .orElse(update.callbackQuery.map(_.message.chat.id))
+        .getOrElse(???) //TODO
+        .toString
+      val user = update.message
+        .flatMap(_.from)
+        .orElse(update.callbackQuery.map(_.from))
+        .getOrElse(???) //TODO
+      val bot = bots(webhookSecret)
+      val shouldReact = bot.chatId.forall(_ == chatId) && !user.isBot
+      if (shouldReact) {
+        val ctx = CallContext(
+          botToken = bot.token,
+          botId = bot.botType.id,
+          chatId = chatId,
+          inputText = input,
+          user = user,
+          inputPhoto = update.message.flatMap(_.photo),
+          callbackQuery = update.callbackQuery
+        )
+        val f = bot.logic(ctx).foldMap(botInterpreter(ctx))
+        f.recoverWith { case e: BotError =>
+          Sync[F].delay(logger.warn("Bot execution exception", e))
+        }.map(_.asRight)
+      } else {
+        skip
+      }
+    }
 
   }
 
