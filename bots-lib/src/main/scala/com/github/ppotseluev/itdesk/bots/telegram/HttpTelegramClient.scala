@@ -4,6 +4,7 @@ import cats.MonadError
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel.MessageSource.PhotoUrl
+import com.typesafe.scalalogging.LazyLogging
 import io.circe.Json
 import io.circe.Printer
 import io.circe.syntax._
@@ -16,13 +17,14 @@ import sttp.client3.circe._
 import sttp.model.Header
 import sttp.model.MediaType
 import sttp.model.StatusCode
+
 import TelegramModel._
-import com.typesafe.scalalogging.LazyLogging
 
 class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
     sttpBackend: SttpBackend[F, Any],
     F: MonadError[F, Throwable]
-) extends TelegramClient[F] with LazyLogging {
+) extends TelegramClient[F]
+    with LazyLogging {
 
   override def send(
       botToken: String

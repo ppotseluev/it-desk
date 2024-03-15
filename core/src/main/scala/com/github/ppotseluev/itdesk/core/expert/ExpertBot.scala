@@ -107,7 +107,9 @@ class ExpertBot[F[_]: Sync](implicit
     "add_photo",
     (getCallContext[F] >>= getPhoto).flatMap { file =>
       updateInfo(photo(file))
-    } >> reply("Выбери, по каким темам ты будешь проводить консультации. Отметь все подходящие варианты")
+    } >> reply(
+      "Выбери, по каким темам ты будешь проводить консультации. Отметь все подходящие варианты"
+    )
   )
 
   private val getExpert: BotScript[F, Expert] =
@@ -187,7 +189,9 @@ class ExpertBot[F[_]: Sync](implicit
 
   private val underReview = Node[F](
     "under_review",
-    reply("Благодарим за заполнение анкеты! Мы уже проверяем данные и скоро активируем твой профиль ⏳")
+    reply(
+      "Благодарим за заполнение анкеты! Мы уже проверяем данные и скоро активируем твой профиль ⏳"
+    )
   )
 
   private val graph: BotGraph[F] =
