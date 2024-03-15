@@ -26,7 +26,7 @@ class GraphBotScenario[F[_]](
       .toMap
 
   private def extractAvailableCommands(node: graph.NodeT): List[BotCommand] =
-    node.outgoing.toList.sortBy(_.order).flatMap(asCommand)
+    node.outgoing.toList.sortBy(_.order).flatMap(asCommands)
 
   private def toBotState(
       actionOverride: Option[BotScript[F, Unit]]
@@ -37,7 +37,7 @@ class GraphBotScenario[F[_]](
       availableCommands = extractAvailableCommands(node)
     )
 
-  private def asCommand(edge: graph.EdgeT): List[BotCommand] =
+  private def asCommands(edge: graph.EdgeT): List[BotCommand] =
     edge.expectedInputPredicate match {
       case ExpectedInputPredicate.EqualTo(expectedText) =>
         expectedText :: Nil
