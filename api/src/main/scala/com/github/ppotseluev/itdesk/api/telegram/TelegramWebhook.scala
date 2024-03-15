@@ -69,7 +69,19 @@ object TelegramWebhook extends LazyLogging {
   }
 
   @ConfiguredJsonCodec
-  case class Update(updateId: Int, message: Option[TgMessage])
+  case class CallbackQuery(
+      id: String,
+      from: User,
+      message: TgMessage,
+      data: String
+  )
+
+  @ConfiguredJsonCodec
+  case class Update(
+      updateId: Int,
+      message: Option[TgMessage],
+      callbackQuery: CallbackQuery
+  )
 
   object Update {
     implicit val codec: Codec[Update] = deriveCodec

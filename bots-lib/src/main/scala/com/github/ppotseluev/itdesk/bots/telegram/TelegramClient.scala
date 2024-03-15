@@ -1,6 +1,7 @@
 package com.github.ppotseluev.itdesk.bots.telegram
 
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.FileInfo
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.KeyboardUpdate
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource.PhotoUrl
 import io.circe.Codec
@@ -17,6 +18,11 @@ trait TelegramClient[F[_]] {
   def getFile(botToken: String, fileId: String): F[FileInfo]
 
   def downloadFile(botToken: String, filePath: String): F[Array[Byte]]
+
+  def editInlineKeyboard(
+      botToken: String,
+      keyboardUpdate: KeyboardUpdate
+  ): F[Unit]
 }
 
 object TelegramClient {
@@ -31,7 +37,20 @@ object TelegramClient {
   implicit private val circeConfig: Configuration = Configuration.default.withSnakeCaseMemberNames
 
   @ConfiguredJsonCodec
+  case class KeyboardUpdate(
+      chatId: String,
+      messageId: String,
+      replyMarkup: ReplyMarkup
+  )
+
+  @ConfiguredJsonCodec
   case class KeyboardButton(text: String)
+
+  @ConfiguredJsonCodec
+  case class InlineButton(
+      text: String,
+      callbackData: String
+  )
 
   object KeyboardButton {
     implicit val keyboardButtonCodec: Codec[KeyboardButton] = deriveCodec
@@ -40,6 +59,7 @@ object TelegramClient {
   @ConfiguredJsonCodec
   case class ReplyMarkup(
       keyboard: Option[Seq[Seq[KeyboardButton]]] = None,
+      inlineKeyboard: Option[Seq[Seq[InlineButton]]] = None,
       isPersistent: Boolean = true,
       removeKeyboard: Option[Boolean] = None
   )
