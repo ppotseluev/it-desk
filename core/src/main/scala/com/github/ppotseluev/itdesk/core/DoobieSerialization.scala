@@ -21,6 +21,4 @@ object DoobieSerialization {
   implicit val putRole: Put[Role] = put[Role]
   implicit val getExpertStatus: Get[ExpertStatus] = get(ExpertStatus)
   implicit val putExpertStatus: Put[ExpertStatus] = put[ExpertStatus]
-  implicit val getSkill: Get[Skill] = get(Skill)
-  implicit val putSkill: Put[Skill] = put[Skill]
 }
