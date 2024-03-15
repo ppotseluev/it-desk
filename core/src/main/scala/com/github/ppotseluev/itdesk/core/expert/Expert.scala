@@ -22,9 +22,9 @@ object Expert {
       name: Option[String],
       description: Option[String],
       photo: Option[Array[Byte]],
-      skills: Set[Skill]
+      skills: Option[Set[Skill]]
   )
   object Info {
-    val empty: Info = Info(None, None, None, Set.empty)
+    val empty: Info = Info(None, None, None, None)
   }
 }

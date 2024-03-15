@@ -1,6 +1,5 @@
 package com.github.ppotseluev.itdesk.core.expert
 
-import cats.effect.Ref
 import cats.effect.Sync
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.CallContext
@@ -9,13 +8,17 @@ import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotCommand
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.BotError.AccessDenied
+import com.github.ppotseluev.itdesk.bots.core.BotError.IllegalInput
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.EqualTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.HasPhoto
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.OneOf
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.equalTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramChatService
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel.KeyboardUpdate
 import java.time.Instant
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
@@ -34,11 +37,12 @@ class ExpertBot[F[_]: Sync](implicit
   private val checkExpertScript: BotScript[F, Unit] =
     for {
       time <- getTime
+      username <- getOrFail("username", _.user.username)
+      isInviteValid <- hasValidInvite(username, time)
       ctx <- getCallContext
-      isInviteValid <- hasValidInvite(ctx.user.username, time)
       _ <-
         if (isInviteValid) registerUser(ctx) >> greet
-        else reply[F]("Access denied") >> raiseError[F](AccessDenied)
+        else reply[F]("Access denied") >> raiseError(AccessDenied)
     } yield ()
 
   private def hasValidInvite(tgUsername: String, nowTime: Instant): BotScript[F, Boolean] =
@@ -54,7 +58,7 @@ class ExpertBot[F[_]: Sync](implicit
     expertService.register(ctx.user.id)
   }
 
-  private def updateInfo(f: (CallContext, Expert.Info) => Expert.Info): BotScript[F, Unit] =
+  private def updateInfo(f: (CallContext, Expert.Info) => Expert.Info): BotScript[F, Expert] =
     getCallContext[F].flatMap { ctx =>
       execute {
         expertService.updateInfo(
@@ -103,54 +107,93 @@ class ExpertBot[F[_]: Sync](implicit
     "add_photo",
     (getCallContext[F] >>= getPhoto).flatMap { file =>
       updateInfo(photo(file))
-    } >> reply(
-//      "Благодарим за заполнение анкеты! Мы уже проверяем данные и скоро активируем твой профиль"
-      "Теперь выберите ваши скиллы. Отметьте все подходящие"
-    )
+    } >> reply("Теперь выберите ваши скиллы. Отметьте все подходящие")
   )
 
-  private val expertsSkills: Map[Long, Ref[F, Set[Skill]]] = Map.empty
+  private val getExpert: BotScript[F, Expert] =
+    for {
+      ctx <- getCallContext
+      expert <- execute(expertService.getExpert(ctx.user.id))
+    } yield expert
 
-  private val getExpert: BotScript[F, Expert] = ???
-  private val addSkillScript: BotScript[F, Unit] = ???
+  private def updateSkillsScript(
+      f: Set[Skill] => Set[Skill]
+  ): BotScript[F, Set[Skill]] =
+    for {
+      expert <- getExpert
+      updatedExpert <- updateInfo { (_, i) =>
+        val skills = expert.info.skills.toSet.flatten
+        i.copy(skills = f(skills).some)
+      }
+    } yield updatedExpert.info.skills.toSet.flatten
+
+  private def buildSkillsKeyboard(
+      selectedSkills: Set[Skill]
+  ): List[BotCommand.Callback] =
+    Skill.values.map { skill =>
+      if (selectedSkills.contains(skill))
+        BotCommand.Callback(
+          text = s"☑️${skill.name}",
+          callbackData = s"-${skill.value}"
+        )
+      else
+        BotCommand.Callback(
+          text = s"🔲${skill.name}",
+          callbackData = s"+${skill.value}"
+        )
+    }.toList
+
+  private def editSkillsKeyboard(newKeyboard: List[BotCommand.Callback]): BotScript[F, Unit] =
+    for {
+      messageId <- getOrFail("callback.message_id", _.callbackQuery.map(_.message.messageId))
+      ctx <- getCallContext
+      markup <- execute(TelegramChatService.buildKeyboard[F](newKeyboard))
+      keyboardUpdate = KeyboardUpdate(
+        chatId = ctx.chatId,
+        messageId = messageId,
+        replyMarkup = markup
+      )
+      _ <- execute {
+        tg.editInlineKeyboard(ctx.botToken, keyboardUpdate)
+      }
+    } yield ()
 
   private val addSkill = Node[F](
     "add_skill",
     for {
-      input <- getInput[F]
-      expert <- getExpert
-      _ <- input match {
-        case s if s.startsWith("\uD83D\uDD32") => addSkillScript // add skill (select)
-        case s if s.startsWith("✅")            => ??? // remove skill (unselect)
-        case _                                 => ???
+      input <- getOrFail("callback_data", _.callbackQuery.flatMap(_.data))
+      (action, skillNumber) = (input.head, input.tail)
+      _ <- action match {
+        case '+' | '-' =>
+          val skill = Skill.withValue(skillNumber.toInt) //TODO it's unsafe
+          val updateSkills = action match {
+            case '+' => updateSkillsScript(_ + skill)
+            case '-' => updateSkillsScript(_ - skill)
+          }
+          updateSkills.map(buildSkillsKeyboard) >>= editSkillsKeyboard
+        case x => raiseError[F, Unit](IllegalInput(s"Unexpected input '$x'"))
       }
-      commands: Seq[BotCommand] = {
-//        expert.info.skills TODO build from selected skills and all known skills
-        ???
-      }
-      //TODO and somehow modify commands of prev msg
     } yield ()
   )
 
   private val underReview = Node[F](
     "under_review",
-    reply("Мы проверяем данные, всё уже почти готово ⏳")
+    reply("Спасибо, мы проверяем данные, всё уже почти готово ⏳")
   )
 
-  private val skillsCheckbox = Skill.values.map(_.name).toList.map(s => s"🔲$s")
+  private val initialSkillsCheckbox = buildSkillsKeyboard(selectedSkills = Set.empty)
+  private val finishCommand = BotCommand.Callback("Готово!", ".")
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> verifyAndAskName addLabel EqualTo("/start"),
+      start ~> verifyAndAskName addLabel equalTo("/start"),
       verifyAndAskName ~> nameAdded addLabel AnyInput,
       nameAdded ~> descriptionAdded addLabel AnyInput,
       descriptionAdded ~> photoAdded addLabel (HasPhoto, 0),
       descriptionAdded ~> descriptionAdded addLabel (AnyInput, 1),
-      photoAdded ~> addSkill addLabel OneOf(skillsCheckbox),
-      addSkill ~> underReview addLabel (EqualTo(
-        "Готово!"
-      ), 0, doNothing.some), //TODO we need this override? flush cache here?
-      addSkill ~> addSkill addLabel (OneOf(Skill.values.map(_.name).toList), 1), //TODO
+      photoAdded ~> addSkill addLabel OneOf(initialSkillsCheckbox :+ finishCommand),
+      addSkill ~> underReview addLabel (EqualTo(finishCommand), 0),
+      addSkill ~> addSkill addLabel (AnyInput, 1),
       underReview ~> underReview addLabel AnyInput
     )
 

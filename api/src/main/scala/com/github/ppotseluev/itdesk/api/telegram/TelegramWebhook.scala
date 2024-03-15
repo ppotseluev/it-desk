@@ -5,15 +5,11 @@ import cats.effect.kernel.Async
 import cats.implicits._
 import com.github.ppotseluev.itdesk.api.BotBundle
 import com.github.ppotseluev.itdesk.bots.CallContext
-import com.github.ppotseluev.itdesk.bots.TgPhoto
-import com.github.ppotseluev.itdesk.bots.TgUser
 import com.github.ppotseluev.itdesk.bots.core.BotError
 import com.github.ppotseluev.itdesk.bots.runtime.BotInterpreter
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel._
 import com.typesafe.scalalogging.LazyLogging
-import io.circe.Codec
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.ConfiguredJsonCodec
-import io.circe.generic.semiauto.deriveCodec
 import sttp.tapir.Endpoint
 import sttp.tapir._
 import sttp.tapir.auth
@@ -25,67 +21,6 @@ import sttp.tapir.stringBody
 
 object TelegramWebhook extends LazyLogging {
   implicit private val circeConfig: Configuration = Configuration.default.withSnakeCaseMemberNames
-
-  @ConfiguredJsonCodec
-  case class Chat(id: Long)
-
-  object Chat {
-    implicit val codec: Codec[Chat] = deriveCodec
-  }
-
-  @ConfiguredJsonCodec
-  case class User(
-      id: UserId,
-      firstName: String,
-      lastName: Option[String],
-      username: Option[String],
-      isBot: Boolean
-  )
-
-  object User {
-    implicit val codec: Codec[User] = deriveCodec
-  }
-
-  @ConfiguredJsonCodec
-  case class Photo(
-      fileId: String,
-      fileUniqueId: String,
-      fileSize: Int,
-      width: Int,
-      height: Int
-  )
-
-  @ConfiguredJsonCodec
-  case class TgMessage(
-      messageId: Int,
-      from: Option[User],
-      chat: Chat,
-      text: Option[String],
-      photo: Option[List[Photo]]
-  )
-
-  object TgMessage {
-    implicit val codec: Codec[TgMessage] = deriveCodec
-  }
-
-  @ConfiguredJsonCodec
-  case class CallbackQuery(
-      id: String,
-      from: User,
-      message: TgMessage,
-      data: String
-  )
-
-  @ConfiguredJsonCodec
-  case class Update(
-      updateId: Int,
-      message: Option[TgMessage],
-      callbackQuery: CallbackQuery
-  )
-
-  object Update {
-    implicit val codec: Codec[Update] = deriveCodec
-  }
 
   private val baseEndpoint = endpoint
 
@@ -115,27 +50,14 @@ object TelegramWebhook extends LazyLogging {
           val bot = bots(webhookSecret)
           val shouldReact = bot.chatId.forall(_ == chatId)
           if (shouldReact) {
-            val photos = photo.map {
-              _.map { p =>
-                TgPhoto(
-                  fileId = p.fileId,
-                  fileUniqueId = p.fileUniqueId,
-                  fileSize = p.fileSize,
-                  width = p.width,
-                  height = p.height
-                )
-              }
-            }
             val ctx = CallContext(
               botToken = bot.token,
               botId = bot.botType.id,
               chatId = chatId,
               inputText = input,
-              user = TgUser(
-                id = user.id,
-                username = user.username.getOrElse("UNDEFINED_USERNAME")
-              ),
-              inputPhoto = photos
+              user = user,
+              inputPhoto = photo,
+              callbackQuery = update.callbackQuery
             )
             val f = bot.logic(ctx).foldMap(botInterpreter(ctx))
             f.recoverWith { case e: BotError =>

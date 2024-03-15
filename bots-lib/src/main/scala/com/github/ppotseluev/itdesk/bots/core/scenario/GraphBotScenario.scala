@@ -39,12 +39,12 @@ class GraphBotScenario[F[_]](
 
   private def asCommands(edge: graph.EdgeT): List[BotCommand] =
     edge.expectedInputPredicate match {
-      case ExpectedInputPredicate.EqualTo(expectedText) =>
-        BotCommand(expectedText) :: Nil
+      case ExpectedInputPredicate.EqualTo(cmd) =>
+        cmd :: Nil
       case ExpectedInputPredicate.AnyInput | ExpectedInputPredicate.HasPhoto =>
         Nil
       case ExpectedInputPredicate.OneOf(commands) =>
-        commands.map(BotCommand.apply)
+        commands
     }
 
   private def isMatched(ctx: CallContext)(edge: graph.EdgeT): Boolean =

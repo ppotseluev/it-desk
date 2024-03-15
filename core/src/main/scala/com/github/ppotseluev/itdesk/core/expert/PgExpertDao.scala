@@ -24,7 +24,7 @@ class PgExpertDao[F[_]](implicit
                   description = ${info.description},
                   status = ${expert.status},
                   photo = ${info.photo},
-                  skills = ${info.skills.toList.map(_.value)}
+                  skills = ${info.skills.toList.flatten.map(_.value)}
            """.update.run.transact(transactor).void
   }
 
@@ -54,7 +54,7 @@ object PgExpertDao {
         name = name,
         description = description,
         photo = photo,
-        skills = skills.map(Skill.withValue).toSet
+        skills = skills.map(Skill.withValue).toSet.some
       ),
       status = status
     )
