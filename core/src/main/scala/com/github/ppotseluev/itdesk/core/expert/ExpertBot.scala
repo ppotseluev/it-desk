@@ -206,7 +206,8 @@ class ExpertBot[F[_]: Sync](implicit
     graph = graph,
     startFrom = verifyAndAskName.id,
     globalCommands = Map(
-      "/start" -> GoTo(verifyAndAskName.id)
+      "/start" -> GoTo(verifyAndAskName.id),
+      "/restart" -> GoTo(verifyAndAskName.id)
     )
   )
 
