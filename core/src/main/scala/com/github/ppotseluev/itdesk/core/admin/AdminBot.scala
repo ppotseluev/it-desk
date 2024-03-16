@@ -7,7 +7,9 @@ import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotCommand
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.BotDsl.reply
-import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.{AnyInput, CallbackButton, equalTo}
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.CallbackButton
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.equalTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario.GlobalAction.GoTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
