@@ -15,10 +15,12 @@ import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.Ha
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.OneOf
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.equalTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
+import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario.GlobalAction.GoTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramChatService
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel.KeyboardUpdate
+
 import java.time.Instant
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
@@ -91,7 +93,6 @@ class ExpertBot[F[_]: Sync](implicit
     }
   }
 
-  private val start = Node.start[F]
   private val verifyAndAskName = Node[F]("check", checkExpertScript)
   private val nameAdded = Node[F](
     "enter_name",
@@ -193,7 +194,6 @@ class ExpertBot[F[_]: Sync](implicit
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> verifyAndAskName addLabel equalTo("/start"),
       verifyAndAskName ~> nameAdded addLabel AnyInput,
       nameAdded ~> descriptionAdded addLabel AnyInput,
       descriptionAdded ~> photoAdded addLabel (HasPhoto, 0),
@@ -206,8 +206,10 @@ class ExpertBot[F[_]: Sync](implicit
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
     graph = graph,
-    startFrom = start.id,
-    globalCommands = Map.empty
+    startFrom = verifyAndAskName.id,
+    globalCommands = Map(
+      "/start" -> GoTo(verifyAndAskName.id)
+    )
   )
 
   val logic = new Bot(
