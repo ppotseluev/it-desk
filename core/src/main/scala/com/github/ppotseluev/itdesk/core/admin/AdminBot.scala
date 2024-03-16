@@ -49,7 +49,7 @@ class AdminBot[F[_]: Sync](implicit
         val name = expert.info.name.getOrElse("UNDEFINED_NAME")
         BotCommand.Callback(name, callbackData = expert.user.tgUserId.toString)
       }
-      reply(availableCommands = commands)
+      reply("Выбери эксперта, чтобы посмотреть его профиль", availableCommands = commands)
     }
   }
   private val showExpertScript: BotScript[F, Unit] =
