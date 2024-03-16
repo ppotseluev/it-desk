@@ -7,8 +7,7 @@ import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotCommand
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.BotDsl.reply
-import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
-import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.equalTo
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.{AnyInput, CallbackButton, equalTo}
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario.GlobalAction.GoTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
@@ -69,12 +68,12 @@ class AdminBot[F[_]: Sync](implicit
 
   private val graph: BotGraph[F] =
     Graph(
-      selectAction ~> askUsername addLabel equalTo("Выдать доступ эксперту"),
-      askUsername ~> selectAction addLabel (equalTo("Отмена"), 0),
-      askUsername ~> expertAdded addLabel (AnyInput, 1),
-      expertAdded ~> selectAction addLabel equalTo("Ok"),
-      findExperts ~> showExpert addLabel AnyInput,
-      showExpert ~> selectAction addLabel equalTo("Меню")
+      selectAction ~> askUsername transit equalTo("Выдать доступ эксперту"),
+      askUsername ~> selectAction transit (equalTo("Отмена"), 0),
+      askUsername ~> expertAdded transit (AnyInput, 1),
+      expertAdded ~> selectAction transit equalTo("Ok"),
+      findExperts ~> showExpert transit CallbackButton,
+      showExpert ~> selectAction transit equalTo("Меню")
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(

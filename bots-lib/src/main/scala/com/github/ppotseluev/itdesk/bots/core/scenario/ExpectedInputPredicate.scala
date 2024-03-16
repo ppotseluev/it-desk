@@ -10,4 +10,5 @@ object ExpectedInputPredicate {
   case class OneOf(expected: List[BotCommand]) extends ExpectedInputPredicate
   case object AnyInput extends ExpectedInputPredicate
   case object HasPhoto extends ExpectedInputPredicate
+  case object CallbackButton extends ExpectedInputPredicate
 }
