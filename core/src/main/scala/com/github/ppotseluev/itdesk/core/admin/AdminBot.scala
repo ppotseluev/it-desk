@@ -74,7 +74,7 @@ class AdminBot[F[_]: Sync](implicit
       askUsername ~> selectAction transit (equalTo("Отмена"), 0),
       askUsername ~> expertAdded transit (AnyInput, 1),
       expertAdded ~> selectAction transit equalTo("Ok"),
-      findExperts ~> selectAction transit (CallbackButton, preAction = showExpertScript.some),
+      findExperts ~> selectAction transit (CallbackButton, actionOverride = showExpertScript.some),
       findExperts ~> selectAction transit equalTo("Ok")
     )
 
