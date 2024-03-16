@@ -38,7 +38,8 @@ object TelegramModel {
       keyboard: Option[Seq[Seq[KeyboardButton]]] = None,
       inlineKeyboard: Option[Seq[Seq[InlineButton]]] = None,
       isPersistent: Option[Boolean] = None,
-      removeKeyboard: Option[Boolean] = None
+      removeKeyboard: Option[Boolean] = None,
+      oneTimeKeyboard: Option[Boolean] = None
   )
 
   @ConfiguredJsonCodec
