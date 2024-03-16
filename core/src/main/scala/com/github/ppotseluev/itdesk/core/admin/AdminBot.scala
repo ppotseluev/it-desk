@@ -79,7 +79,7 @@ class AdminBot[F[_]: Sync](implicit
       expertAdded ~> selectAction transit equalTo("Ok"),
       findExperts ~> showExpert transit CallbackButton,
       findExperts ~> selectAction transit equalTo("Ok"),
-      showExpert ~> showExpert transit CallbackButton
+      showExpert ~> findExperts transit CallbackButton
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
