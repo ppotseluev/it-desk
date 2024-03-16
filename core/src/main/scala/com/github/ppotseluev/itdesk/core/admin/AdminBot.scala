@@ -23,7 +23,7 @@ class AdminBot[F[_]: Sync](implicit
     expertService: ExpertService[F]
 ) {
 
-  private def saveExpert(username: String): BotScript[F, Unit] = execute {
+  private def saveExpert(username: String): BotScript[F, Unit] = lift {
     expertService.inviteExpert(username).void
   }
 
@@ -39,7 +39,7 @@ class AdminBot[F[_]: Sync](implicit
     }
   )
 
-  private val findExpertsScript: BotScript[F, Unit] = execute {
+  private val findExpertsScript: BotScript[F, Unit] = lift {
     expertService.getAllExperts
   }.flatMap { experts =>
     if (experts.isEmpty) {
@@ -55,7 +55,7 @@ class AdminBot[F[_]: Sync](implicit
   private val showExpertScript: BotScript[F, Unit] =
     for {
       input <- getOrFail("callback_data", _.callbackQuery.flatMap(_.data))
-      expert <- execute(expertService.getExpert(input.toLong))
+      expert <- lift(expertService.getExpert(input.toLong))
       _ <- reply(expert.show, expert.info.photo.map(_.asRight))
     } yield ()
 

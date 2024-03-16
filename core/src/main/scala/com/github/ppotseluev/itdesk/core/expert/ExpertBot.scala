@@ -19,6 +19,8 @@ import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramChatService
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel.KeyboardUpdate
+import com.github.ppotseluev.itdesk.core.user.Role
+import com.github.ppotseluev.itdesk.core.user.UserDao
 import java.time.Instant
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph
@@ -27,26 +29,32 @@ import sttp.client3.SttpBackend
 class ExpertBot[F[_]: Sync](implicit
     sttpBackend: SttpBackend[F, Any],
     expertService: ExpertService[F],
+    userDao: UserDao[F],
     tg: TelegramClient[F]
 ) {
-  private val getTime: BotScript[F, Instant] = execute(Sync[F].delay(Instant.now))
+  private val getTime: BotScript[F, Instant] = lift(Sync[F].delay(Instant.now))
   private val greet: BotScript[F, Unit] =
     reply[F]("Приветствуем тебя на нашей платформе! Пожалуйста, заполни данные о себе") >>
       reply[F]("Как тебя зовут? Введи в формате Имя Фамилия")
 
   private val checkExpertScript: BotScript[F, Unit] =
     for {
+      ctx <- getCallContext
+      _ <- isRegisteredUser(ctx).ifM(greet, processNewUser(ctx))
+    } yield ()
+
+  private def processNewUser(ctx: CallContext): BotScript[F, Unit] =
+    for {
       time <- getTime
       username <- getOrFail("username", _.user.username)
-      isInviteValid <- hasValidInvite(username, time)
-      ctx <- getCallContext
-      _ <-
-        if (isInviteValid) registerUser(ctx) >> greet
-        else reply[F]("Access denied") >> raiseError(AccessDenied)
+      _ <- hasValidInvite(username, time).ifM(
+        ifTrue = registerUser(ctx) >> greet,
+        ifFalse = reply[F]("Access denied") >> raiseError(AccessDenied)
+      )
     } yield ()
 
   private def hasValidInvite(tgUsername: String, nowTime: Instant): BotScript[F, Boolean] =
-    execute {
+    lift {
       expertService.getInvite(tgUsername).map {
         _.exists { invite =>
           invite.validUntil.isAfter(nowTime)
@@ -54,13 +62,17 @@ class ExpertBot[F[_]: Sync](implicit
       }
     }
 
-  private def registerUser(ctx: CallContext): BotScript[F, Unit] = execute {
+  private def isRegisteredUser(ctx: CallContext): BotScript[F, Boolean] = lift {
+    userDao.getUser(Role.Expert, ctx.user.id).map(_.isDefined)
+  }
+
+  private def registerUser(ctx: CallContext): BotScript[F, Unit] = lift {
     expertService.register(ctx.user.id)
   }
 
   private def updateInfo(f: (CallContext, Expert.Info) => Expert.Info): BotScript[F, Expert] =
     getCallContext[F].flatMap { ctx =>
-      execute {
+      lift {
         expertService.updateInfo(
           tgUserId = ctx.user.id,
           info = f(ctx, Expert.Info.empty)
@@ -80,7 +92,7 @@ class ExpertBot[F[_]: Sync](implicit
     info.copy(photo = photo)
   }
 
-  private def getPhoto(ctx: CallContext): BotScript[F, Option[Array[Byte]]] = execute {
+  private def getPhoto(ctx: CallContext): BotScript[F, Option[Array[Byte]]] = lift {
     ctx.inputPhoto.flatMap(_.maxByOption(_.width)) match {
       case Some(photo) =>
         for {
@@ -114,7 +126,7 @@ class ExpertBot[F[_]: Sync](implicit
   private val getExpert: BotScript[F, Expert] =
     for {
       ctx <- getCallContext
-      expert <- execute(expertService.getExpert(ctx.user.id))
+      expert <- lift(expertService.getExpert(ctx.user.id))
     } yield expert
 
   private def updateSkillsScript(
@@ -154,13 +166,13 @@ class ExpertBot[F[_]: Sync](implicit
     for {
       messageId <- getOrFail("callback.message_id", _.callbackQuery.map(_.message.messageId))
       ctx <- getCallContext
-      markup <- execute(TelegramChatService.buildKeyboard[F](newKeyboard))
+      markup <- lift(TelegramChatService.buildKeyboard[F](newKeyboard))
       keyboardUpdate = KeyboardUpdate(
         chatId = ctx.chatId,
         messageId = messageId,
         replyMarkup = markup
       )
-      _ <- execute {
+      _ <- lift {
         tg.editInlineKeyboard(ctx.botToken, keyboardUpdate)
       }
     } yield ()
@@ -220,7 +232,8 @@ class ExpertBot[F[_]: Sync](implicit
 object ExpertBot {
   def apply[F[_]: Sync](implicit
       sttpBackend: SttpBackend[F, Any],
-      expertDao: ExpertService[F],
+      expertService: ExpertService[F],
+      userDao: UserDao[F],
       tg: TelegramClient[F]
   ) =
     new ExpertBot[F]

@@ -28,13 +28,13 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
     "skills",
     reply("Я умею показывать время и цену BTC :)")
   )
-  private val getTime = execute {
+  private val getTime = lift {
     Sync[F].delay {
       LocalDateTime.now()
     }
   }
 
-  private val getBtcPrice = execute {
+  private val getBtcPrice = lift {
     basicRequest
       .get(uri"https://blockchain.info/tobtc?currency=USD&value=1")
       .send(sttpBackend)

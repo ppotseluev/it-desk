@@ -55,7 +55,7 @@ object BotDsl {
   ): BotScript[F, Unit] =
     liftF(Reply(Message(Payload(text, photo), availableCommands)))
 
-  def execute[F[_], T](f: F[T]): BotScript[F, T] = liftF(Execute(f))
+  def lift[F[_], T](f: F[T]): BotScript[F, T] = liftF(Execute(f))
 
   def getCallContext[F[_]]: BotScript[F, CallContext] = liftF(GetCallContext)
 
