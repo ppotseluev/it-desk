@@ -201,8 +201,7 @@ class ExpertBot[F[_]: Sync](implicit
       photoAdded ~> addSkill addLabel OneOf(initialSkillsCheckbox),
       addSkill ~> underReview addLabel (EqualTo(finishCommand), 0),
       addSkill ~> addSkill addLabel (AnyInput, 1),
-      underReview ~> verifyAndAskName addLabel (equalTo("/start"), 0),
-      underReview ~> underReview addLabel (AnyInput, 1)
+      underReview ~> underReview addLabel AnyInput
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
