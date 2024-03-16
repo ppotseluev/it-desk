@@ -6,7 +6,7 @@ import cats.effect.IO
 import cats.effect.Resource
 import com.github.ppotseluev.itdesk.api.telegram.TelegramWebhook
 import com.github.ppotseluev.itdesk.api.telegram.WebhookSecret
-import com.github.ppotseluev.itdesk.bots.Context
+import com.github.ppotseluev.itdesk.bots.CallContext
 import com.github.ppotseluev.itdesk.bots.core._
 import com.github.ppotseluev.itdesk.bots.runtime._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient
@@ -125,7 +125,7 @@ class Factory[F[_]: Async: Parallel] {
     }
 
   def telegramWebhookHandler(implicit
-      botInterpreter: Context => BotInterpreter[F],
+      botInterpreter: CallContext => BotInterpreter[F],
       sttp: SttpBackend[F, Any]
   ): TelegramWebhook.Handler[F] =
     new TelegramWebhook.Handler[F](
@@ -134,7 +134,7 @@ class Factory[F[_]: Async: Parallel] {
     )
 
   def api(implicit
-      botInterpreter: Context => BotInterpreter[F],
+      botInterpreter: CallContext => BotInterpreter[F],
       sttp: SttpBackend[F, Any]
   ): Api[F] = new Api(
     telegramHandler = telegramWebhookHandler,

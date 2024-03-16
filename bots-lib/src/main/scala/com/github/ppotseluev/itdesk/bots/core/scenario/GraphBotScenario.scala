@@ -1,7 +1,7 @@
 package com.github.ppotseluev.itdesk.bots.core.scenario
 
 import cats.implicits._
-import com.github.ppotseluev.itdesk.bots.Context
+import com.github.ppotseluev.itdesk.bots.CallContext
 import com.github.ppotseluev.itdesk.bots.core.BotDsl.BotScript
 import com.github.ppotseluev.itdesk.bots.core.BotDsl.doNothing
 import com.github.ppotseluev.itdesk.bots.core._
@@ -15,9 +15,10 @@ import scalax.collection.immutable.Graph
 class GraphBotScenario[F[_]](
     val graph: BotGraph[F],
     val startFrom: BotStateId,
-    val globalCommands: Map[BotCommand, BotScript[F, Unit]]
+    val globalCommands: Map[String, BotScript[F, Unit]]
 ) {
-  import GraphBotScenario.EdgeImplicits._
+  private object EdgeImplicits extends LEdgeImplicits[EdgeLabel[F]]
+  import EdgeImplicits._
 
   private val states: Map[BotStateId, graph.NodeT] =
     graph.nodes
@@ -25,67 +26,73 @@ class GraphBotScenario[F[_]](
       .toMap
 
   private def extractAvailableCommands(node: graph.NodeT): List[BotCommand] =
-    node.outgoing.toList.sortBy(_.order).flatMap(asCommand)
+    node.outgoing.toList.sortBy(_.order).flatMap(asCommands)
 
-  private def toBotState(node: graph.NodeT): BotState[F] =
+  private def toBotState(
+      actionOverride: Option[BotScript[F, Unit]]
+  )(node: graph.NodeT): BotState[F] =
     BotState(
       id = node.id,
-      action = node.action,
+      action = actionOverride.getOrElse(node.action),
       availableCommands = extractAvailableCommands(node)
     )
 
-  private def asCommand(edge: graph.EdgeT): Option[BotCommand] =
+  private def asCommands(edge: graph.EdgeT): List[BotCommand] =
     edge.expectedInputPredicate match {
-      case ExpectedInputPredicate.TextIsEqualTo(expectedText) =>
-        Some(expectedText)
+      case ExpectedInputPredicate.EqualTo(cmd) =>
+        cmd :: Nil
       case ExpectedInputPredicate.AnyInput | ExpectedInputPredicate.HasPhoto =>
-        None
+        Nil
+      case ExpectedInputPredicate.OneOf(commands) =>
+        commands
     }
 
-  private def isMatched(ctx: Context)(edge: graph.EdgeT): Boolean =
+  private def isMatched(ctx: CallContext)(edge: graph.EdgeT): Boolean =
     Matcher.isMatched(ctx)(edge.expectedInputPredicate)
 
-  def transit(stateId: BotStateId, ctx: Context): Option[BotState[F]] =
+  def transit(stateId: BotStateId, ctx: CallContext): Option[BotState[F]] =
     globalState(stateId, ctx.inputText).orElse {
       states
         .get(stateId)
         .flatMap(_.outgoing.toList.sortBy(_.order).find(isMatched(ctx)))
-        .map(_.to)
-        .map(toBotState)
+        .map { edge =>
+          toBotState(edge.actionOverride)(edge.to)
+        }
     }
-
-  private def get(stateId: BotStateId): Option[BotState[F]] =
-    states.get(stateId).map(toBotState)
 
   private def globalState(
       currentStateId: BotStateId,
       command: String
   ): Option[BotState[F]] =
     globalCommands.get(command) match {
-      case Some(action) => get(currentStateId).map(_.copy(action = action))
-      case None         => None
+      case Some(action) =>
+        states
+          .get(currentStateId)
+          .map(toBotState(None))
+          .map(_.copy(action = action))
+      case None =>
+        None
     }
 }
 
 object GraphBotScenario {
-  case class EdgeLabel(order: Int, expectedInputPredicate: ExpectedInputPredicate)
 
-  object EdgeLabel {
-    def command(command: String, order: Int): EdgeLabel =
-      EdgeLabel(order, ExpectedInputPredicate.TextIsEqualTo(command))
-  }
+  /**
+   * @param actionOverride overrides node action
+   */
+  case class EdgeLabel[F[_]](
+      order: Int,
+      expectedInputPredicate: ExpectedInputPredicate,
+      actionOverride: Option[BotScript[F, Unit]]
+  )
 
-  implicit class LDiEdgeAssoc[N](val e: DiEdge[N]) extends AnyVal {
-    def by(input: String, order: Int = 0) =
-      e + EdgeLabel.command(input, order)
-    def byAnyInput(order: Int) =
-      e + EdgeLabel(order, ExpectedInputPredicate.AnyInput)
-    def byAnyInput =
-      e + EdgeLabel(0, ExpectedInputPredicate.AnyInput)
-    def byAnyPhoto(order: Int) =
-      e + EdgeLabel(order, ExpectedInputPredicate.HasPhoto)
-    def byAnyPhoto =
-      e + EdgeLabel(0, ExpectedInputPredicate.HasPhoto)
+  implicit class DiEdgeOps[N](val e: DiEdge[N]) extends AnyVal {
+    def addLabel[F[_]](
+        predicate: ExpectedInputPredicate,
+        order: Int = 0,
+        actionOverride: Option[BotScript[F, Unit]] = None
+    ) =
+      e + EdgeLabel(order, predicate, actionOverride)
   }
 
   case class Node[F[_]](id: BotStateId, action: BotScript[F, Unit])
@@ -94,7 +101,5 @@ object GraphBotScenario {
   }
 
   type BotGraph[F[_]] = Graph[Node[F], LDiEdge]
-
-  object EdgeImplicits extends LEdgeImplicits[EdgeLabel]
 
 }

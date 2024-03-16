@@ -4,16 +4,12 @@ import cats.effect.Sync
 import cats.effect.kernel.Async
 import cats.implicits._
 import com.github.ppotseluev.itdesk.api.BotBundle
-import com.github.ppotseluev.itdesk.bots.Context
-import com.github.ppotseluev.itdesk.bots.TgPhoto
-import com.github.ppotseluev.itdesk.bots.TgUser
+import com.github.ppotseluev.itdesk.bots.CallContext
 import com.github.ppotseluev.itdesk.bots.core.BotError
 import com.github.ppotseluev.itdesk.bots.runtime.BotInterpreter
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel._
 import com.typesafe.scalalogging.LazyLogging
-import io.circe.Codec
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.ConfiguredJsonCodec
-import io.circe.generic.semiauto.deriveCodec
 import sttp.tapir.Endpoint
 import sttp.tapir._
 import sttp.tapir.auth
@@ -25,55 +21,6 @@ import sttp.tapir.stringBody
 
 object TelegramWebhook extends LazyLogging {
   implicit private val circeConfig: Configuration = Configuration.default.withSnakeCaseMemberNames
-
-  @ConfiguredJsonCodec
-  case class Chat(id: Long)
-
-  object Chat {
-    implicit val codec: Codec[Chat] = deriveCodec
-  }
-
-  @ConfiguredJsonCodec
-  case class User(
-      id: UserId,
-      firstName: String,
-      lastName: Option[String],
-      username: Option[String],
-      isBot: Boolean
-  )
-
-  object User {
-    implicit val codec: Codec[User] = deriveCodec
-  }
-
-  @ConfiguredJsonCodec
-  case class Photo(
-      fileId: String,
-      fileUniqueId: String,
-      fileSize: Int,
-      width: Int,
-      height: Int
-  )
-
-  @ConfiguredJsonCodec
-  case class TgMessage(
-      messageId: Int,
-      from: Option[User],
-      chat: Chat,
-      text: Option[String],
-      photo: Option[List[Photo]]
-  )
-
-  object TgMessage {
-    implicit val codec: Codec[TgMessage] = deriveCodec
-  }
-
-  @ConfiguredJsonCodec
-  case class Update(updateId: Int, message: Option[TgMessage])
-
-  object Update {
-    implicit val codec: Codec[Update] = deriveCodec
-  }
 
   private val baseEndpoint = endpoint
 
@@ -88,52 +35,53 @@ object TelegramWebhook extends LazyLogging {
       .securityIn(auth.apiKey(header[WebhookSecret]("X-Telegram-Bot-Api-Secret-Token")))
 
   class Handler[F[_]: Sync](
-      botInterpreter: Context => BotInterpreter[F],
+      botInterpreter: CallContext => BotInterpreter[F],
       bots: Map[WebhookSecret, BotBundle[F]]
   ) {
     private val success = ().asRight[Error].pure[F]
 
     private def skip = success
 
-    def handleTelegramEvent(webhookSecret: WebhookSecret)(update: Update): F[Either[Error, Unit]] =
-      update.message match {
-        case Some(TgMessage(_, Some(user), chat, rawInput, photo)) if !user.isBot =>
-          val input = rawInput.getOrElse("").stripSuffix("@it_desk_admin_bot") //TODO
-          val chatId = chat.id.toString
-          val bot = bots(webhookSecret)
-          val shouldReact = bot.chatId.forall(_ == chatId)
-          if (shouldReact) {
-            val photos = photo.map {
-              _.map { p =>
-                TgPhoto(
-                  fileId = p.fileId,
-                  fileUniqueId = p.fileUniqueId,
-                  fileSize = p.fileSize,
-                  width = p.width,
-                  height = p.height
-                )
-              }
-            }
-            val ctx = Context(
-              botToken = bot.token,
-              botId = bot.botType.id,
-              chatId = chatId,
-              inputText = input,
-              user = TgUser(
-                id = user.id,
-                username = user.username.getOrElse("UNDEFINED_USERNAME")
-              ),
-              inputPhoto = photos
-            )
-            val f = bot.logic(ctx).foldMap(botInterpreter(ctx))
-            f.recoverWith { case e: BotError =>
-              Sync[F].delay(logger.warn("Bot execution exception", e))
-            }.map(_.asRight)
-          } else {
-            skip
-          }
-        case _ => skip
+    def handleTelegramEvent(
+        webhookSecret: WebhookSecret
+    )(update: Update): F[Either[Error, Unit]] = Sync[F].delay {
+      val bot = bots(webhookSecret)
+      logger.info(s"[${bot.botType}] received $update")
+    } >> {
+      val input = update.message
+        .flatMap(_.text)
+        .map(_.stripSuffix("@it_desk_admin_bot"))
+        .orElse(update.callbackQuery.map(_.message).flatMap(_.text))
+        .getOrElse("")
+      val chatId = update.message
+        .map(_.chat.id)
+        .orElse(update.callbackQuery.map(_.message.chat.id))
+        .getOrElse(???) //TODO
+        .toString
+      val user = update.message
+        .flatMap(_.from)
+        .orElse(update.callbackQuery.map(_.from))
+        .getOrElse(???) //TODO
+      val bot = bots(webhookSecret)
+      val shouldReact = bot.chatId.forall(_ == chatId) && !user.isBot
+      if (shouldReact) {
+        val ctx = CallContext(
+          botToken = bot.token,
+          botId = bot.botType.id,
+          chatId = chatId,
+          inputText = input,
+          user = user,
+          inputPhoto = update.message.flatMap(_.photo),
+          callbackQuery = update.callbackQuery
+        )
+        val f = bot.logic(ctx).foldMap(botInterpreter(ctx))
+        f.recoverWith { case e: BotError =>
+          Sync[F].delay(logger.warn("Bot execution exception", e))
+        }.map(_.asRight)
+      } else {
+        skip
       }
+    }
 
   }
 

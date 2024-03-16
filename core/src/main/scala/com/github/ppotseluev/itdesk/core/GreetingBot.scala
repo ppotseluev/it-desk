@@ -5,6 +5,8 @@ import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.core.Bot
 import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.equalTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
@@ -52,16 +54,16 @@ class GreetingBot[F[_]: Sync](implicit sttpBackend: SttpBackend[F, Any]) {
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> greet byAnyInput,
-      greet ~> start by "Назад",
-      greet ~> skills by "Что ты умеешь?",
-      skills ~> start by "В начало",
-      skills ~> showTime by "Покажи время!",
-      skills ~> getBtcPriceNode by "И сколько сейчас биток?",
-      showTime ~> skills by "Назад",
-      showTime ~> showTime by "Обновить",
-      getBtcPriceNode ~> skills by "Назад",
-      getBtcPriceNode ~> getBtcPriceNode by "Обновить"
+      start ~> greet addLabel AnyInput,
+      greet ~> start addLabel equalTo("Назад"),
+      greet ~> skills addLabel equalTo("Что ты умеешь?"),
+      skills ~> start addLabel equalTo("В начало"),
+      skills ~> showTime addLabel equalTo("Покажи время!"),
+      skills ~> getBtcPriceNode addLabel equalTo("И сколько сейчас биток?"),
+      showTime ~> skills addLabel equalTo("Назад"),
+      showTime ~> showTime addLabel equalTo("Обновить"),
+      getBtcPriceNode ~> skills addLabel equalTo("Назад"),
+      getBtcPriceNode ~> getBtcPriceNode addLabel equalTo("Обновить")
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(

@@ -20,7 +20,9 @@ trait ExpertService[F[_]] {
 
   def getInvite(tgUsername: String): F[Option[Invite]]
 
-  def updateInfo(tgUserId: Long, info: Expert.Info): F[Unit]
+  def updateInfo(tgUserId: Long, info: Expert.Info): F[Expert]
+
+  def getExpert(tgUserId: Long): F[Expert]
 
   def getAllExperts: F[Vector[Expert]]
 }
@@ -51,7 +53,7 @@ object ExpertService {
       private def updateExpert(
           user: User,
           newInfo: Expert.Info
-      ): F[Unit] =
+      ): F[Expert] =
         for {
           expert <- expertDao.getExpert(user)
           info = expert.map(_.info)
@@ -59,7 +61,7 @@ object ExpertService {
             name = newInfo.name.orElse(info.flatMap(_.name)),
             description = newInfo.description.orElse(info.flatMap(_.description)),
             photo = newInfo.photo.orElse(info.flatMap(_.photo)),
-            skills = info.toSet.flatMap((i: Expert.Info) => i.skills) ++ newInfo.skills
+            skills = newInfo.skills.orElse(info.flatMap(_.skills))
           )
           updatedExpert = expert match {
             case Some(value) => value.copy(info = updatedInfo)
@@ -71,19 +73,19 @@ object ExpertService {
               )
           }
           _ <- expertDao.upsertExpert(updatedExpert)
-        } yield ()
+        } yield updatedExpert
 
-      override def updateInfo(tgUserId: Long, newInfo: Expert.Info): F[Unit] = {
+      override def updateInfo(tgUserId: Long, newInfo: Expert.Info): F[Expert] =
         for {
           optUser <- userDao.getUser(Role.Expert, tgUserId)
-          _ <- optUser match {
+          expert <- optUser match {
             case Some(user) =>
               updateExpert(user, newInfo)
             case None =>
-              new NoSuchElementException(s"User with tgId $tgUserId not found").raiseError[F, Unit]
+              new NoSuchElementException(s"User with tgId $tgUserId not found")
+                .raiseError[F, Expert]
           }
-        } yield ()
-      }
+        } yield expert
 
       override def getAllExperts: F[Vector[Expert]] = {
         userDao.getUsers(Filter.All).flatMap {
@@ -93,5 +95,21 @@ object ExpertService {
         }
       }.map(_.flatten)
 
+      override def getExpert(tgUserId: Long): F[Expert] =
+        for {
+          optUser <- userDao.getUser(Role.Expert, tgUserId)
+          expert <- optUser match {
+            case Some(user) =>
+              expertDao.getExpert(user).flatMap {
+                case Some(value) => value.pure[F]
+                case None =>
+                  new NoSuchElementException(s"Expert with tgId $tgUserId not found")
+                    .raiseError[F, Expert]
+              }
+            case None =>
+              new NoSuchElementException(s"User with tgId $tgUserId not found")
+                .raiseError[F, Expert]
+          }
+        } yield expert
     }
 }

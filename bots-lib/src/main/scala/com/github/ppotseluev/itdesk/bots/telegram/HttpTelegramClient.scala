@@ -3,10 +3,9 @@ package com.github.ppotseluev.itdesk.bots.telegram
 import cats.MonadError
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.telegram.HttpTelegramClient.RichResponse
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.FileInfo
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.MessageSource.PhotoUrl
-import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient.TgResponse
+import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel.MessageSource.PhotoUrl
+import com.typesafe.scalalogging.LazyLogging
+import io.circe.Encoder
 import io.circe.Json
 import io.circe.Printer
 import io.circe.syntax._
@@ -20,24 +19,35 @@ import sttp.model.Header
 import sttp.model.MediaType
 import sttp.model.StatusCode
 
+import TelegramModel._
+
 class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
     sttpBackend: SttpBackend[F, Any],
     F: MonadError[F, Throwable]
-) extends TelegramClient[F] {
+) extends TelegramClient[F]
+    with LazyLogging {
 
-  override def send(
-      botToken: String
-  )(messageSource: MessageSource, photo: Option[Either[PhotoUrl, Array[Byte]]]): F[Unit] = {
+  private def postJson[T: Encoder](
+      botToken: String,
+      method: String,
+      body: T
+  ): F[Unit] = {
     val json = Printer.noSpaces
       .copy(dropNullValues = true)
-      .print(messageSource.asJson)
-    val sendText = basicRequest
-      .post(uri"$telegramUrl/bot$botToken/sendMessage")
+      .print(body.asJson)
+    basicRequest
+      .post(uri"$telegramUrl/bot$botToken/$method")
       .header(Header.contentType(MediaType.ApplicationJson))
       .body(json)
       .send(sttpBackend)
       .getBodyOrFail()
       .void
+  }
+
+  override def send(
+      botToken: String
+  )(messageSource: MessageSource, photo: Option[Either[PhotoUrl, Array[Byte]]]): F[Unit] = {
+    val sendText = postJson(botToken, "sendMessage", messageSource)
     photo match {
       case Some(value) =>
         if (messageSource.text.length > 1024) {
@@ -87,6 +97,12 @@ class HttpTelegramClient[F[_]](telegramUrl: String)(implicit
       .response(asByteArray)
       .send(sttpBackend)
       .getBodyOrFail()
+
+  override def editInlineKeyboard(
+      botToken: String,
+      keyboardUpdate: KeyboardUpdate
+  ): F[Unit] =
+    postJson(botToken, "editMessageReplyMarkup", keyboardUpdate)
 }
 
 object HttpTelegramClient {

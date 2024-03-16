@@ -7,6 +7,7 @@ import com.github.ppotseluev.itdesk.core.expert.PgExpertDao.ExpertRecord
 import com.github.ppotseluev.itdesk.core.user.User
 import doobie.Transactor
 import doobie.implicits._
+import doobie.postgres.implicits._
 
 class PgExpertDao[F[_]](implicit
     transactor: Transactor[F],
@@ -22,7 +23,8 @@ class PgExpertDao[F[_]](implicit
                   name = ${info.name},
                   description = ${info.description},
                   status = ${expert.status},
-                  photo = ${info.photo}
+                  photo = ${info.photo},
+                  skills = ${info.skills.toList.flatten.map(_.value)}
            """.update.run.transact(transactor).void
   }
 
@@ -43,8 +45,8 @@ object PgExpertDao {
       name: Option[String],
       description: Option[String],
       status: ExpertStatus,
-      photo: Option[Array[Byte]]
-//      skills: Array[Skill]
+      photo: Option[Array[Byte]],
+      skills: List[Int]
   ) {
     def expert(user: User): Expert = Expert(
       user = user,
@@ -52,7 +54,7 @@ object PgExpertDao {
         name = name,
         description = description,
         photo = photo,
-        skills = Set.empty //TODO skills.toSet
+        skills = skills.map(Skill.withValue).toSet.some
       ),
       status = status
     )

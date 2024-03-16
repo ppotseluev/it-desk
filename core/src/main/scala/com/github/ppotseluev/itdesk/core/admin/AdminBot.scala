@@ -6,6 +6,8 @@ import com.github.ppotseluev.itdesk.bots.core.Bot
 import com.github.ppotseluev.itdesk.bots.core.Bot.FallbackPolicy
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.BotDsl.reply
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.equalTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.core.expert.ExpertService
@@ -37,17 +39,17 @@ class AdminBot[F[_]: Sync](implicit
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> selectAction by "/start",
-      selectAction ~> askUsername by "Выдать доступ эксперту",
-      askUsername ~> selectAction by ("Отмена", 0),
-      askUsername ~> expertAdded byAnyInput 1,
-      expertAdded ~> selectAction by "Ok"
+      start ~> selectAction addLabel equalTo("/start"),
+      selectAction ~> askUsername addLabel equalTo("Выдать доступ эксперту"),
+      askUsername ~> selectAction addLabel (equalTo("Отмена"), 0),
+      askUsername ~> expertAdded addLabel (AnyInput, 1),
+      expertAdded ~> selectAction addLabel equalTo("Ok")
     )
 
   private def showExperts: BotScript[F, Unit] = execute {
     expertService.getAllExperts
   }.flatMap { experts =>
-    experts.headOption match { //TODO
+    experts.headOption match {
       case Some(expert) =>
         val txt = expert.show
         reply(txt, expert.info.photo.map(_.asRight))
