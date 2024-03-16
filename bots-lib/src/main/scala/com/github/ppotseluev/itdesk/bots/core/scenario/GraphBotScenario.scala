@@ -40,7 +40,8 @@ class GraphBotScenario[F[_]](
     edge.expectedInputPredicate match {
       case ExpectedInputPredicate.EqualTo(cmd) =>
         cmd :: Nil
-      case ExpectedInputPredicate.AnyInput | ExpectedInputPredicate.HasPhoto =>
+      case ExpectedInputPredicate.AnyInput | ExpectedInputPredicate.HasPhoto |
+          ExpectedInputPredicate.CallbackButton =>
         Nil
       case ExpectedInputPredicate.OneOf(commands) =>
         commands
@@ -91,7 +92,7 @@ object GraphBotScenario {
   )
 
   implicit class DiEdgeOps[N](val e: DiEdge[N]) extends AnyVal {
-    def addLabel[F[_]](
+    def transit[F[_]](
         predicate: ExpectedInputPredicate,
         order: Int = 0,
         actionOverride: Option[BotScript[F, Unit]] = None //TODO support pre-action as well?

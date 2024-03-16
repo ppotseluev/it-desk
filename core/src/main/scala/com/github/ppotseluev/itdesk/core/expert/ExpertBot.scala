@@ -192,14 +192,14 @@ class ExpertBot[F[_]: Sync](implicit
 
   private val graph: BotGraph[F] =
     Graph(
-      verifyAndAskName ~> nameAdded addLabel AnyInput,
-      nameAdded ~> descriptionAdded addLabel AnyInput,
-      descriptionAdded ~> photoAdded addLabel (HasPhoto, 0),
-      descriptionAdded ~> descriptionAdded addLabel (AnyInput, 1),
-      photoAdded ~> addSkill addLabel OneOf(initialSkillsCheckbox),
-      addSkill ~> underReview addLabel (EqualTo(finishCommand), 0),
-      addSkill ~> addSkill addLabel (AnyInput, 1),
-      underReview ~> underReview addLabel AnyInput
+      verifyAndAskName ~> nameAdded transit AnyInput,
+      nameAdded ~> descriptionAdded transit AnyInput,
+      descriptionAdded ~> photoAdded transit (HasPhoto, 0),
+      descriptionAdded ~> descriptionAdded transit (AnyInput, 1),
+      photoAdded ~> addSkill transit OneOf(initialSkillsCheckbox),
+      addSkill ~> underReview transit (EqualTo(finishCommand), 0),
+      addSkill ~> addSkill transit (AnyInput, 1),
+      underReview ~> underReview transit AnyInput
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(

@@ -50,9 +50,10 @@ object BotDsl {
 
   def reply[F[_]](
       text: String,
-      photo: Option[Either[String, Array[Byte]]] = None
+      photo: Option[Either[String, Array[Byte]]] = None,
+      availableCommands: Seq[BotCommand] = Seq.empty
   ): BotScript[F, Unit] =
-    liftF(Reply(Message(Payload(text, photo), Seq.empty)))
+    liftF(Reply(Message(Payload(text, photo), availableCommands)))
 
   def execute[F[_], T](f: F[T]): BotScript[F, T] = liftF(Execute(f))
 

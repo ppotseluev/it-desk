@@ -18,5 +18,6 @@ object Matcher {
       case ExpectedInputPredicate.AnyInput        => true
       case ExpectedInputPredicate.HasPhoto        => ctx.inputPhoto.exists(_.nonEmpty)
       case ExpectedInputPredicate.OneOf(commands) => commands.exists(commandMatch(ctx))
+      case ExpectedInputPredicate.CallbackButton  => ctx.callbackQuery.exists(_.data.isDefined)
     }
 }

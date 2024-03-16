@@ -13,7 +13,7 @@ object Expert {
   implicit val show: Show[Expert] = Show.show { expert =>
     s"""
       |${expert.info.name.getOrElse("")}\n
-      |С чем готов помочь: ${expert.info.skills.toSet.flatten.map(_.name).mkString(", ")}
+      |С чем готов помочь: ${expert.info.skills.toSet.flatten.map(_.name).mkString(", ")}\n
       |${expert.info.description.getOrElse("")}
       |""".stripMargin
   }
