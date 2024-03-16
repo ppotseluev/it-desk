@@ -3,7 +3,6 @@ package com.github.ppotseluev.itdesk.bots.core.scenario
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.CallContext
 import com.github.ppotseluev.itdesk.bots.core.BotDsl.BotScript
-import com.github.ppotseluev.itdesk.bots.core.BotDsl.doNothing
 import com.github.ppotseluev.itdesk.bots.core._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import scalax.collection.GraphEdge.DiEdge
@@ -15,7 +14,7 @@ import scalax.collection.immutable.Graph
 class GraphBotScenario[F[_]](
     val graph: BotGraph[F],
     val startFrom: BotStateId,
-    val globalCommands: Map[String, BotScript[F, Unit]]
+    val globalCommands: Map[String, GlobalAction[F]]
 ) {
   private object EdgeImplicits extends LEdgeImplicits[EdgeLabel[F]]
   import EdgeImplicits._
@@ -64,18 +63,23 @@ class GraphBotScenario[F[_]](
       currentStateId: BotStateId,
       command: String
   ): Option[BotState[F]] =
-    globalCommands.get(command) match {
-      case Some(action) =>
+    globalCommands.get(command).flatMap {
+      case GlobalAction.GoTo(newStateId) =>
+        states.get(newStateId).map(toBotState(None))
+      case GlobalAction.RunScript(botScript) =>
         states
           .get(currentStateId)
-          .map(toBotState(None))
-          .map(_.copy(action = action))
-      case None =>
-        None
+          .map(toBotState(actionOverride = botScript.some))
     }
 }
 
 object GraphBotScenario {
+
+  sealed trait GlobalAction[+F[_]]
+  object GlobalAction {
+    case class RunScript[F[_]](botScript: BotScript[F, Unit]) extends GlobalAction[F]
+    case class GoTo(state: BotStateId) extends GlobalAction[Nothing]
+  }
 
   /**
    * @param actionOverride overrides node action
@@ -90,15 +94,12 @@ object GraphBotScenario {
     def addLabel[F[_]](
         predicate: ExpectedInputPredicate,
         order: Int = 0,
-        actionOverride: Option[BotScript[F, Unit]] = None
+        actionOverride: Option[BotScript[F, Unit]] = None //TODO support pre-action as well?
     ) =
       e + EdgeLabel(order, predicate, actionOverride)
   }
 
   case class Node[F[_]](id: BotStateId, action: BotScript[F, Unit])
-  object Node {
-    def start[F[_]]: Node[F] = Node("start", doNothing[F])
-  }
 
   type BotGraph[F[_]] = Graph[Node[F], LDiEdge]
 

@@ -9,6 +9,8 @@ import com.github.ppotseluev.itdesk.bots.core.BotDsl.reply
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.equalTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
+import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario.GlobalAction.GoTo
+import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario.GlobalAction.RunScript
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.core.expert.ExpertService
 import scalax.collection.GraphPredef.EdgeAssoc
@@ -20,7 +22,6 @@ class AdminBot[F[_]: Sync](implicit
     expertService: ExpertService[F]
 ) {
 
-  private val start = Node.start[F]
   private val selectAction = Node[F]("select_action", reply("Выберите действие"))
   private val askUsername = Node[F]("ask_username", reply("Введите @tg_username"))
   private val expertAdded = Node[F](
@@ -39,7 +40,6 @@ class AdminBot[F[_]: Sync](implicit
 
   private val graph: BotGraph[F] =
     Graph(
-      start ~> selectAction addLabel equalTo("/start"),
       selectAction ~> askUsername addLabel equalTo("Выдать доступ эксперту"),
       askUsername ~> selectAction addLabel (equalTo("Отмена"), 0),
       askUsername ~> expertAdded addLabel (AnyInput, 1),
@@ -59,9 +59,10 @@ class AdminBot[F[_]: Sync](implicit
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
     graph = graph,
-    startFrom = start.id,
+    startFrom = selectAction.id,
     globalCommands = Map(
-      "/show_experts" -> showExperts
+      "/show_experts" -> RunScript(showExperts),
+      "/start" -> GoTo(selectAction.id)
     )
   )
 
