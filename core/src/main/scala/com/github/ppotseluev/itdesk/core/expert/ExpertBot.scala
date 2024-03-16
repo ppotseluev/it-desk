@@ -13,14 +13,12 @@ import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.An
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.EqualTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.HasPhoto
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.OneOf
-import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.equalTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario.GlobalAction.GoTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramChatService
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel.KeyboardUpdate
-
 import java.time.Instant
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph

@@ -9,7 +9,8 @@ import com.github.ppotseluev.itdesk.bots.core.BotDsl.reply
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
 import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.equalTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
-import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario.GlobalAction.{GoTo, RunScript}
+import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario.GlobalAction.GoTo
+import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario.GlobalAction.RunScript
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import com.github.ppotseluev.itdesk.core.expert.ExpertService
 import scalax.collection.GraphPredef.EdgeAssoc
