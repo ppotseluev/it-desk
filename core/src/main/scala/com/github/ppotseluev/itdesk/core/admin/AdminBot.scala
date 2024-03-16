@@ -83,6 +83,7 @@ class AdminBot[F[_]: Sync](implicit
     startFrom = selectAction.id,
     globalCommands = Map(
       "/show_experts" -> GoTo(findExperts.id),
+      "/menu" -> GoTo(selectAction.id),
       "/start" -> GoTo(selectAction.id)
     )
   )
