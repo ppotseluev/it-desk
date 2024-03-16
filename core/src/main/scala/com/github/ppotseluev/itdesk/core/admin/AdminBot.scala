@@ -78,7 +78,8 @@ class AdminBot[F[_]: Sync](implicit
       askUsername ~> expertAdded transit (AnyInput, 1),
       expertAdded ~> selectAction transit equalTo("Ok"),
       findExperts ~> showExpert transit CallbackButton,
-      showExpert ~> selectAction transit equalTo("Меню")
+      findExperts ~> selectAction transit equalTo("Ok"),
+      showExpert ~> showExpert transit CallbackButton
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
