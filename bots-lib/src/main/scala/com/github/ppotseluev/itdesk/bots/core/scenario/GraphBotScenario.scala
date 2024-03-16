@@ -2,7 +2,7 @@ package com.github.ppotseluev.itdesk.bots.core.scenario
 
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.CallContext
-import com.github.ppotseluev.itdesk.bots.core.BotDsl.BotScript
+import com.github.ppotseluev.itdesk.bots.core.BotDsl.{BotScript, doNothing}
 import com.github.ppotseluev.itdesk.bots.core._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import scalax.collection.GraphEdge.DiEdge
@@ -101,6 +101,10 @@ object GraphBotScenario {
   }
 
   case class Node[F[_]](id: BotStateId, action: BotScript[F, Unit])
+
+  object Node {
+    def start[F[_]]: Node[F] = Node("start", doNothing[F])
+  }
 
   type BotGraph[F[_]] = Graph[Node[F], LDiEdge]
 

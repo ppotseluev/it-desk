@@ -68,8 +68,11 @@ class AdminBot[F[_]: Sync](implicit
     showExpertScript
   )
 
+  private val start = Node.start[F]
+
   private val graph: BotGraph[F] =
     Graph(
+      start ~> selectAction transit equalTo("/start"),
       selectAction ~> askUsername transit equalTo("Выдать доступ эксперту"),
       askUsername ~> selectAction transit (equalTo("Отмена"), 0),
       askUsername ~> expertAdded transit (AnyInput, 1),
@@ -80,7 +83,7 @@ class AdminBot[F[_]: Sync](implicit
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
     graph = graph,
-    startFrom = selectAction.id,
+    startFrom = start.id,
     globalCommands = Map(
       "/show_experts" -> GoTo(findExperts.id),
       "/menu" -> GoTo(selectAction.id),
