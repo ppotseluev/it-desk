@@ -63,10 +63,6 @@ class AdminBot[F[_]: Sync](implicit
     "find_experts",
     findExpertsScript
   )
-  private val showExpert = Node[F](
-    "show_expert",
-    showExpertScript
-  )
 
   private val start = Node.start[F]
 
@@ -74,19 +70,18 @@ class AdminBot[F[_]: Sync](implicit
     Graph(
       start ~> selectAction transit equalTo("/start"),
       selectAction ~> askUsername transit equalTo("Выдать доступ эксперту"),
+      selectAction ~> findExperts transit equalTo("Посмотреть экспертов"),
       askUsername ~> selectAction transit (equalTo("Отмена"), 0),
       askUsername ~> expertAdded transit (AnyInput, 1),
       expertAdded ~> selectAction transit equalTo("Ok"),
-      findExperts ~> showExpert transit CallbackButton,
-      findExperts ~> selectAction transit equalTo("Ok"),
-      showExpert ~> findExperts transit CallbackButton
+      findExperts ~> findExperts transit (CallbackButton, preAction = showExpertScript.some),
+      findExperts ~> selectAction transit equalTo("Ok")
     )
 
   private val scenario: GraphBotScenario[F] = new GraphBotScenario(
     graph = graph,
     startFrom = start.id,
     globalCommands = Map(
-      "/show_experts" -> GoTo(findExperts.id),
       "/menu" -> GoTo(selectAction.id),
       "/start" -> GoTo(selectAction.id)
     )

@@ -9,7 +9,11 @@ import com.github.ppotseluev.itdesk.bots.core.BotCommand
 import com.github.ppotseluev.itdesk.bots.core.BotDsl._
 import com.github.ppotseluev.itdesk.bots.core.BotError.AccessDenied
 import com.github.ppotseluev.itdesk.bots.core.BotError.IllegalInput
-import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.{AnyInput, EqualTo, HasPhoto, OneOf, equalTo}
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.AnyInput
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.EqualTo
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.HasPhoto
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.OneOf
+import com.github.ppotseluev.itdesk.bots.core.scenario.ExpectedInputPredicate.equalTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario.GlobalAction.GoTo
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
@@ -18,7 +22,6 @@ import com.github.ppotseluev.itdesk.bots.telegram.TelegramClient
 import com.github.ppotseluev.itdesk.bots.telegram.TelegramModel.KeyboardUpdate
 import com.github.ppotseluev.itdesk.core.user.Role
 import com.github.ppotseluev.itdesk.core.user.UserDao
-
 import java.time.Instant
 import scalax.collection.GraphPredef.EdgeAssoc
 import scalax.collection.immutable.Graph

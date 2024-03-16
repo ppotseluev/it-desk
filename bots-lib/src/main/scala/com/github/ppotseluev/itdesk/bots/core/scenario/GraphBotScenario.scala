@@ -2,7 +2,8 @@ package com.github.ppotseluev.itdesk.bots.core.scenario
 
 import cats.implicits._
 import com.github.ppotseluev.itdesk.bots.CallContext
-import com.github.ppotseluev.itdesk.bots.core.BotDsl.{BotScript, doNothing}
+import com.github.ppotseluev.itdesk.bots.core.BotDsl.BotScript
+import com.github.ppotseluev.itdesk.bots.core.BotDsl.doNothing
 import com.github.ppotseluev.itdesk.bots.core._
 import com.github.ppotseluev.itdesk.bots.core.scenario.GraphBotScenario._
 import scalax.collection.GraphEdge.DiEdge
@@ -28,11 +29,12 @@ class GraphBotScenario[F[_]](
     node.outgoing.toList.sortBy(_.order).flatMap(asCommands)
 
   private def toBotState(
+      preAction: Option[BotScript[F, Unit]],
       actionOverride: Option[BotScript[F, Unit]]
   )(node: graph.NodeT): BotState[F] =
     BotState(
       id = node.id,
-      action = actionOverride.getOrElse(node.action),
+      action = preAction.getOrElse(doNothing) >> actionOverride.getOrElse(node.action),
       availableCommands = extractAvailableCommands(node)
     )
 
@@ -56,7 +58,7 @@ class GraphBotScenario[F[_]](
         .get(stateId)
         .flatMap(_.outgoing.toList.sortBy(_.order).find(isMatched(ctx)))
         .map { edge =>
-          toBotState(edge.actionOverride)(edge.to)
+          toBotState(edge.preAction, edge.actionOverride)(edge.to)
         }
     }
 
@@ -66,11 +68,11 @@ class GraphBotScenario[F[_]](
   ): Option[BotState[F]] =
     globalCommands.get(command).flatMap {
       case GlobalAction.GoTo(newStateId) =>
-        states.get(newStateId).map(toBotState(None))
+        states.get(newStateId).map(toBotState(None, None))
       case GlobalAction.RunScript(botScript) =>
         states
           .get(currentStateId)
-          .map(toBotState(actionOverride = botScript.some))
+          .map(toBotState(preAction = None, actionOverride = botScript.some))
     }
 }
 
@@ -88,16 +90,18 @@ object GraphBotScenario {
   case class EdgeLabel[F[_]](
       order: Int,
       expectedInputPredicate: ExpectedInputPredicate,
-      actionOverride: Option[BotScript[F, Unit]]
+      actionOverride: Option[BotScript[F, Unit]],
+      preAction: Option[BotScript[F, Unit]]
   )
 
   implicit class DiEdgeOps[N](val e: DiEdge[N]) extends AnyVal {
     def transit[F[_]](
-        predicate: ExpectedInputPredicate,
+        by: ExpectedInputPredicate,
         order: Int = 0,
-        actionOverride: Option[BotScript[F, Unit]] = None //TODO support pre-action as well?
+        actionOverride: Option[BotScript[F, Unit]] = None,
+        preAction: Option[BotScript[F, Unit]] = None
     ) =
-      e + EdgeLabel(order, predicate, actionOverride)
+      e + EdgeLabel(order, by, actionOverride, preAction)
   }
 
   case class Node[F[_]](id: BotStateId, action: BotScript[F, Unit])
