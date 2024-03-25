@@ -3,7 +3,6 @@ package com.github.ppotseluev.itdesk.core.expert
 import cats.effect.MonadCancelThrow
 import cats.implicits._
 import com.github.ppotseluev.itdesk.core.DoobieSerialization._
-import com.github.ppotseluev.itdesk.core.expert.PgExpertDao.ExpertRecord
 import com.github.ppotseluev.itdesk.core.user.User
 import doobie.Transactor
 import doobie.implicits._
@@ -13,11 +12,12 @@ class PgExpertDao[F[_]](implicit
     transactor: Transactor[F],
     F: MonadCancelThrow[F]
 ) extends ExpertDao[F] {
+  import PgExpertDao._
 
   override def upsertExpert(expert: Expert): F[Unit] = {
     import expert.info
     sql"""
-             INSERT INTO experts (user_id, name, description, status)
+             INSERT INTO $table (user_id, name, description, status)
                VALUES (${expert.user.id}, ${info.name}, ${info.description}, ${expert.status})
                ON CONFLICT (user_id) DO UPDATE SET
                   name = ${info.name},
@@ -30,7 +30,7 @@ class PgExpertDao[F[_]](implicit
 
   override def getExpert(user: User): F[Option[Expert]] =
     sql"""
-        SELECT * FROM experts
+        SELECT * FROM $table
         WHERE user_id = ${user.id}
       """
       .query[ExpertRecord]
@@ -40,6 +40,7 @@ class PgExpertDao[F[_]](implicit
 }
 
 object PgExpertDao {
+  private val table = "it_desk_experts"
   case class ExpertRecord(
       userId: Long,
       name: Option[String],
