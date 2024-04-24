@@ -27,5 +27,5 @@ CREATE TABLE it_desk_experts(
     photo           BYTEA             DEFAULT NULL,
     skills          INTEGER[]        DEFAULT '{}'::INTEGER[],
     PRIMARY KEY (user_id),
-    CONSTRAINT FK_UserId FOREIGN KEY (user_id) REFERENCES users(id)
+    CONSTRAINT FK_UserId FOREIGN KEY (user_id) REFERENCES it_desk_users(id)
 );
